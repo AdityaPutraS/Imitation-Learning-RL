@@ -15,7 +15,6 @@ from math_util import rotFrom2Vec
 
 logger = logging.getLogger(__name__)
 
-
 def getJointPos(df, joint, multiplier = 1):
     x = df[joint + '_Xposition']
     y = df[joint + '_Yposition']
@@ -121,7 +120,7 @@ class LowLevelHumanoidEnv(gym.Env):
         self.frame_update_cnt = 0
         self.setJointsOrientation(self.frame)
 
-        self.incFrame(5)
+        self.incFrame(1)
 
         self.deltaJoints = 0
         self.deltaEndPoints = 0
@@ -133,7 +132,7 @@ class LowLevelHumanoidEnv(gym.Env):
 
     def resetNonFrame(self):
         self.cur_obs = self.flat_env.reset()
-        self.flat_env.parts['torso'].reset_position([0, 0, 1.15])
+        # self.flat_env.parts['torso'].reset_position([0, 0, 1.15])
 
         self.frame = 0
         self.frame_update_cnt = 0
@@ -197,11 +196,11 @@ class LowLevelHumanoidEnv(gym.Env):
             totalReward += r * w
 
         if(self.deltaJoints >= 0.5 and self.deltaEndPoints >= 0.5):
-            self.incFrame(5)
+            self.incFrame(1)
         else:
             self.frame_update_cnt += 1
             if(self.frame_update_cnt > 10):
-                self.incFrame(5)
+                self.incFrame(1)
                 self.frame_update_cnt = 0
 
 

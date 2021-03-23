@@ -29,7 +29,7 @@ def make_env(env_config):
 
 ENV_NAME = 'HumanoidBulletEnv-v0-Low'
 register_env(ENV_NAME, make_env)
-TARGET_REWARD = 2000
+TARGET_REWARD = 5000
 
 
 def policy_mapping_fn(agent_id):
