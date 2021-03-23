@@ -62,6 +62,7 @@ class LowLevelHumanoidEnv(gym.Env):
             'left_hip_y': 3,
             'left_hip_z': 1,
         }
+        self.joint_weight_sum = sum(self.joint_weight.values())
 
         self.end_point_map = {
             'link0_12': 'RightLeg',
@@ -69,6 +70,14 @@ class LowLevelHumanoidEnv(gym.Env):
             'link0_19': 'LeftLeg',
             'left_foot': 'LeftFoot',
         }
+        
+        self.end_point_weight = {
+            'link0_12': 2,
+            'right_foot': 1,
+            'link0_19': 2,
+            'left_foot': 1,
+        }
+        self.end_point_weight_sum = sum(self.end_point_weight.values())
 
         self.deltaJoints = 0
         self.deltaEndPoints = 0
@@ -146,7 +155,7 @@ class LowLevelHumanoidEnv(gym.Env):
             deltaJoints += np.abs(self.flat_env.jdict[jMap].get_position() - \
                 jointsRef[self.joint_map[jMap]]) * self.joint_weight[jMap]
 
-        return np.exp(-5 * deltaJoints / 8)
+        return np.exp(-5 * deltaJoints / self.joint_weight_sum)
     
     def calcEndPointScore(self):
         deltaEndPoint = 0
@@ -158,9 +167,9 @@ class LowLevelHumanoidEnv(gym.Env):
             v1 = self.flat_env.parts[epMap].get_position()
             v2 = base_pos + getJointPos(endPointRef, self.end_point_map[epMap])
             deltaVec = v2 - v1
-            deltaEndPoint += np.linalg.norm(deltaVec)
+            deltaEndPoint += np.linalg.norm(deltaVec) * self.end_point_weight[epMap]
         
-        return 2 * np.exp(-10 * deltaEndPoint / 4)
+        return 2 * np.exp(-10 * deltaEndPoint / self.end_point_weight_sum)
 
 
     def calcJumpReward(self, obs):
