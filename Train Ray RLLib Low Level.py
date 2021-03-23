@@ -14,8 +14,7 @@ from ray.rllib.agents.ppo import PPOTrainer
 from ray.tune.registry import register_env
 
 from low_level_env import LowLevelHumanoidEnv
-
-
+from custom_callback import RewardLogCallback
 
 # ray.shutdown()
 ray.init(ignore_reinit_error=True)
@@ -39,6 +38,7 @@ def policy_mapping_fn(agent_id):
 
 config = {
     "env": ENV_NAME,
+    "callbacks": RewardLogCallback,
     "num_workers": 6,
     "num_envs_per_worker": 5,
     "log_level": "WARN",
@@ -50,7 +50,7 @@ config = {
     "clip_param": 0.2,
     "kl_coeff": 1.0,
     "num_sgd_iter": 20,
-    "lr": .0001,
+    "lr": .0005,
     "sgd_minibatch_size": 8000,
     "train_batch_size": 24000,
     "model": {
