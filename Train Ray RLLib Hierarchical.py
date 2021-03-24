@@ -45,11 +45,11 @@ def policy_mapping_fn(agent_id):
 
 highLevelPolicy = (
     None,
-    single_env.observation_space,
-    single_env.intermediate_space,
+    single_env.high_level_obs_space,
+    single_env.high_level_act_space,
     {
         "model": {
-            "fcnet_hiddens": [88, 16, 8],
+            "fcnet_hiddens": [256, 128, 64],
             "fcnet_activation": "tanh",
             "free_log_std": True,
         },
@@ -58,8 +58,8 @@ highLevelPolicy = (
 
 lowLevelPolicy = (
     None,
-    Box(low=-np.inf, high=np.inf, shape=[44 + 4]),
-    single_env.action_space,
+    single_env.low_level_obs_space,
+    single_env.low_level_act_space,
     {
         "model": {
             "fcnet_hiddens": [256, 128, 64],

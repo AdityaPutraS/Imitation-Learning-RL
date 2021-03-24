@@ -38,13 +38,17 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
             ("Joints CSV/walk8_1JointPos.csv", "Joints CSV/walk8_1JointVecFromHip.csv"),
         ]
         num_reference = len(reference_list)
-        
-        # [target angle, target dist, frame number, skip frame]
-        self.intermediate_space = Box(low=-1.0, high=1.0, shape=[4])
+
+        self.high_level_obs_space = self.observation_space
+        self.high_level_act_space = Box(
+            low=-1.0, high=1.0, shape=[2]
+        )  # [frame number, skip frame]
+
+        self.low_level_obs_space = self.observation_space
+        self.low_level_act_space = self.action_space
 
         self.step_per_level = 25
-        self.cur_intermediate = None
-        self.step_remaining = None
+        self.steps_remaining_at_level = self.step_per_level
         self.num_high_level_steps = 0
 
         # self.joints_df = [pd.read_csv(path[0]) for path in reference_list]
@@ -150,8 +154,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         self.cur_obs = self.flat_env.robot.calc_state()
 
-        self.cur_intermediate = None
-        self.step_remaining = None
+        self.steps_remaining_at_level = self.step_per_level
         self.num_high_level_steps = 0
 
         self.targetAngle = 0
@@ -176,8 +179,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.deltaEndPoints = 0
         self.baseReward = 0
 
-        self.cur_intermediate = None
-        self.step_remaining = None
+        self.steps_remaining_at_level = self.step_per_level
         self.num_high_level_steps = 0
 
         self.targetAngle = 0
@@ -231,19 +233,20 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
     def high_level_step(self, action):
         self.current_goal = action
 
-        # action = [target angle, target dist, frame number, skip frame]
-        self.targetAngle = action[0]
-        self.targetDist = action[1]
+        # # action = [target angle, target dist, frame number, skip frame]
+        # self.targetAngle = action[0]
+        # self.targetDist = action[1]
 
-        # Mapping hasil tanh ke 0 - max_frame untuk action[2] dan 1 - 5 untuk action[3]
-        self.frame = int((action[2] + 1)/2 * (self.max_frame - self.skipFrame))
-        self.skipFrame = 1 + int((action[3] +1)/2 * 4)
+        # Mapping hasil tanh ke 0 - max_frame untuk action[0] dan 1 - 5 untuk action[1]
+        self.frame = int((action[0] + 1) / 2 * (self.max_frame - self.skipFrame))
+        self.skipFrame = 1 + int((action[1] + 1) / 2 * 4)
 
         self.steps_remaining_at_level = self.step_per_level
         self.num_high_level_steps += 1
         self.low_level_agent_id = "low_level_{}".format(self.num_high_level_steps)
 
-        obs = {self.low_level_agent_id: np.hstack((self.cur_obs, self.current_goal))}
+        # obs = {self.low_level_agent_id: np.hstack((self.cur_obs, self.current_goal))}
+        obs = {self.low_level_agent_id: self.cur_obs}
         rew = {self.low_level_agent_id: 0}
         done = {"__all__": False}
         return obs, rew, done, {}
@@ -263,7 +266,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         jumpReward = self.calcJumpReward(f_obs)  # Untuk task lompat
 
         reward = [self.baseReward, self.deltaJoints, self.deltaEndPoints, jumpReward]
-        rewardWeight = [1, 0.1, 1, 0]
+        rewardWeight = [1, 1, 1, 0]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):
@@ -277,17 +280,18 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
                 self.incFrame(self.skipFrame)
                 self.frame_update_cnt = 0
 
-        obs = {self.low_level_agent_id: np.hstack((f_obs, self.current_goal))}
+        # obs = {self.low_level_agent_id: np.hstack((f_obs, self.current_goal))}
+        obs = {self.low_level_agent_id: self.cur_obs}
         rew = {self.low_level_agent_id: totalReward}
         # Handle env termination & transitions back to higher level
         done = {"__all__": False}
         if f_done:
             done["__all__"] = True
-            rew["high_level_agent"] = f_rew
+            rew["high_level_agent"] = (self.step_per_level - self.steps_remaining_at_level) / 10
             obs["high_level_agent"] = f_obs
         elif self.steps_remaining_at_level <= 0:
             done[self.low_level_agent_id] = True
-            rew["high_level_agent"] = 0
+            rew["high_level_agent"] = self.step_per_level / 10
             obs["high_level_agent"] = f_obs
 
         return obs, rew, done, {}
