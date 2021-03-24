@@ -10,18 +10,15 @@ import numpy as np
 
 from ray.rllib.env import MultiAgentEnv
 
+from low_level_env import LowLevelHumanoidEnv
+
 from scipy.spatial.transform import Rotation as R
 from math_util import rotFrom2Vec
 
 logger = logging.getLogger(__name__)
 
-def getJointPos(df, joint, multiplier = 1):
-    x = df[joint + '_Xposition']
-    y = df[joint + '_Yposition']
-    z = df[joint + '_Zposition']
-    return np.array([x, y, z]) * multiplier
+class HierarchicalHumanoidEnv(MultiAgentEnv):
 
-class LowLevelHumanoidEnv(gym.Env):
     metadata = {'render.modes': [
         'human', 'rgb_array'], 'video.frames_per_second': 60}
 
