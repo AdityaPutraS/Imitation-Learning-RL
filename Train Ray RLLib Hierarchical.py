@@ -13,22 +13,25 @@ from ray.tune import function
 from ray.rllib.agents.ppo import PPOTrainer
 from ray.tune.registry import register_env
 
-from low_level_env import LowLevelHumanoidEnv
+import numpy as np
+
+# from low_level_env import LowLevelHumanoidEnv
+from hier_env import HierarchicalHumanoidEnv
 from custom_callback import RewardLogCallback
 
 # ray.shutdown()
 ray.init(ignore_reinit_error=True)
 
-single_env = LowLevelHumanoidEnv()
+single_env = HierarchicalHumanoidEnv()
 
 
 def make_env(env_config):
     import pybullet_envs
 
-    return LowLevelHumanoidEnv()
+    return HierarchicalHumanoidEnv()
 
 
-ENV_NAME = "HumanoidBulletEnv-v0-Low"
+ENV_NAME = "HumanoidBulletEnv-v0-Hier"
 register_env(ENV_NAME, make_env)
 TARGET_REWARD = 5000
 
@@ -40,11 +43,22 @@ def policy_mapping_fn(agent_id):
         return "high_level_policy"
 
 
-highLevelPolicy = (None, single_env.observation_space, Box(), {"model": {}})
+highLevelPolicy = (
+    None,
+    single_env.observation_space,
+    single_env.intermediate_space,
+    {
+        "model": {
+            "fcnet_hiddens": [88, 16, 8],
+            "fcnet_activation": "tanh",
+            "free_log_std": True,
+        },
+    },
+)
 
 lowLevelPolicy = (
     None,
-    Box(),
+    Box(low=-np.inf, high=np.inf, shape=[44 + 4]),
     single_env.action_space,
     {
         "model": {
@@ -62,8 +76,8 @@ config = {
     "num_envs_per_worker": 5,
     "multiagent": {
         "policies": {
-            "high_level_policy": (None),
-            "low_level_policy": (None),
+            "high_level_policy": highLevelPolicy,
+            "low_level_policy": lowLevelPolicy,
         },
         "policy_mapping_fn": function(policy_mapping_fn),
     },
@@ -76,7 +90,7 @@ config = {
     "clip_param": 0.2,
     "kl_coeff": 1.0,
     "num_sgd_iter": 20,
-    "lr": 0.0005,
+    "lr": 0.001,
     "sgd_minibatch_size": 8000,
     "train_batch_size": 24000,
     "batch_mode": "complete_episodes",
@@ -85,7 +99,7 @@ config = {
 
 tune.run(
     PPOTrainer,
-    name="HWalk_Low_Mimic",
+    name="HWalk_Hier_Mimic",
     resume=False,
     checkpoint_at_end=True,
     checkpoint_freq=5,

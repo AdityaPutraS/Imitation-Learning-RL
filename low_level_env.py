@@ -144,7 +144,7 @@ class LowLevelHumanoidEnv(gym.Env):
         return self.cur_obs
 
     def step(self, action):
-        return self._low_level_step(action)
+        return self.low_level_step(action)
 
     def calcJointScore(self):
         deltaJoints = 0
