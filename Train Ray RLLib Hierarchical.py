@@ -72,8 +72,8 @@ lowLevelPolicy = (
 config = {
     "env": ENV_NAME,
     "callbacks": RewardLogCallback,
-    "num_workers": 6,
-    "num_envs_per_worker": 5,
+    "num_workers": 5,
+    "num_envs_per_worker": 6,
     "multiagent": {
         "policies": {
             "high_level_policy": highLevelPolicy,
@@ -90,7 +90,7 @@ config = {
     "clip_param": 0.2,
     "kl_coeff": 1.0,
     "num_sgd_iter": 20,
-    "lr": 0.001,
+    "lr": 0.0005,
     "sgd_minibatch_size": 8000,
     "train_batch_size": 24000,
     "batch_mode": "complete_episodes",
@@ -100,7 +100,7 @@ config = {
 tune.run(
     PPOTrainer,
     name="HWalk_Hier_Mimic",
-    resume=False,
+    resume=True,
     checkpoint_at_end=True,
     checkpoint_freq=5,
     keep_checkpoints_num=50,

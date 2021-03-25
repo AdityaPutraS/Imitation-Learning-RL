@@ -24,6 +24,11 @@ class RewardLogCallback(DefaultCallbacks):
         episode.hist_data["delta_end_point"] = []
         episode.hist_data["base_reward"] = []
 
+        episode.user_data["low_target_score"] = []
+        episode.user_data["high_target_score"] = []
+        episode.hist_data["low_target_score"] = []
+        episode.hist_data["high_target_score"] = []
+
     def on_episode_step(self, *, worker: RolloutWorker, base_env: BaseEnv,
                         episode: MultiAgentEpisode, env_index: int, **kwargs):
         dj = base_env.get_unwrapped()[0].deltaJoints
@@ -32,7 +37,12 @@ class RewardLogCallback(DefaultCallbacks):
         
         episode.user_data["delta_joints"].append(dj)
         episode.user_data["delta_end_point"].append(ep)
-        episode.user_data["base_reward"].append(ep)
+        episode.user_data["base_reward"].append(br)
+
+        lts = base_env.get_unwrapped()[0].lowTargetScore
+        hts = base_env.get_unwrapped()[0].highTargetScore
+        episode.user_data["low_target_score"].append(lts)
+        episode.user_data["high_target_score"].append(hts)
         
     def on_episode_end(self, *, worker: RolloutWorker, base_env: BaseEnv,
                        policies: Dict[str, Policy], episode: MultiAgentEpisode,
@@ -43,8 +53,15 @@ class RewardLogCallback(DefaultCallbacks):
 
         episode.custom_metrics["delta_joints"] = mean_dj
         episode.custom_metrics["delta_end_point"] = mean_ep
-        episode.custom_metrics["base_reward"] = mean_ep
+        episode.custom_metrics["base_reward"] = mean_br
 
         episode.hist_data["delta_joints"] = episode.user_data["delta_joints"]
         episode.hist_data["delta_end_point"] = episode.user_data["delta_end_point"]
         episode.hist_data["base_reward"] = episode.user_data["base_reward"]
+
+        mean_lts = np.mean(episode.user_data["low_target_score"])
+        episode.custom_metrics["low_target_score"] = mean_lts
+        episode.hist_data["low_target_score"] = episode.user_data["low_target_score"]
+        mean_hts = np.mean(episode.user_data["high_target_score"])
+        episode.custom_metrics["high_target_score"] = mean_hts
+        episode.hist_data["high_target_score"] = episode.user_data["high_target_score"]
