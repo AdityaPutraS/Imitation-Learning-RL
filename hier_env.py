@@ -48,7 +48,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         )  # [target_x, target_y]
 
         self.low_level_obs_space = Box(
-            low=-np.inf, high=np.inf, shape=[5 + 17*2 + 2]
+            low=-np.inf, high=np.inf, shape=[1 + 5 + 17*2 + 2]
         )
         self.low_level_act_space = self.flat_env.action_space
 
@@ -81,13 +81,13 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         }
 
         self.joint_weight = {
-            "right_knee": 1.5,
+            "right_knee": 3,
             "right_hip_x": 1,
-            "right_hip_y": 1.5,
+            "right_hip_y": 3,
             "right_hip_z": 1,
-            "left_knee": 1.5,
+            "left_knee": 3,
             "left_hip_x": 1,
-            "left_hip_y": 1.5,
+            "left_hip_y": 3,
             "left_hip_z": 1,
         }
         self.joint_weight_sum = sum(self.joint_weight.values())
@@ -172,7 +172,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.steps_remaining_at_level = self.step_per_level
         self.num_high_level_steps = 0
         
-        self.skipFrame = 1
+        self.skipFrame = 2
 
         self.incFrame(self.skipFrame)
 
@@ -259,7 +259,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         # Hitung jarak
         dRobotTarget = np.linalg.norm(vTarget - vRobot)
 
-        return np.exp(-dRobotTarget/5)
+        return 2 * np.exp(-dRobotTarget/5)
     
     def calcLowLevelTargetScore(self):
         vTargetHL = self.targetHighLevel
@@ -271,16 +271,21 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         # Hitung jarak
         dRobotTargetHL = np.linalg.norm(vTargetHL - vRobot)
 
-        return np.exp(-dRobotTargetHL)
+        return 2 * np.exp(-dRobotTargetHL)
 
     def calcJumpReward(self, obs):
         return 0
 
     def getLowLevelObs(self):
         # Berikan low level agent nilai joint dan target high level
+        deltaZ = self.cur_obs[0]
         robotInfo = self.cur_obs[3:3+5]
         jointVal = self.cur_obs[8:8+17*2]
-        return np.hstack((robotInfo, jointVal, self.targetHighLevel[:2]))
+        
+        vTargetHL = self.targetHighLevel
+        vRobot = self.flat_env.parts['torso'].get_position()
+
+        return np.hstack((deltaZ, robotInfo, jointVal, vTargetHL[0] - vRobot[0], vTargetHL[1] - vRobot[1]))
 
     def getHighLevelObs(self):
         return self.cur_obs
@@ -317,18 +322,18 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         jumpReward = self.calcJumpReward(f_obs)  # Untuk task lompat
 
         reward = [self.baseReward, self.deltaJoints, self.deltaEndPoints, self.lowTargetScore, jumpReward]
-        rewardWeight = [1, 0.1, 1, 1, 0]
+        rewardWeight = [1, 0.1, 1.5, 4, 0]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):
             totalReward += r * w
 
-        if self.deltaJoints >= 0.15 and self.deltaEndPoints >= 0.15:
+        if self.deltaJoints >= 0.2 and self.deltaEndPoints >= 0.15:
             self.incFrame(self.skipFrame)
             self.frame_update_cnt = 0
         else:
             self.frame_update_cnt += 1
-            if self.frame_update_cnt > 5:
+            if self.frame_update_cnt > 10:
                 self.incFrame(self.skipFrame)
                 self.frame_update_cnt = 0
 
@@ -337,13 +342,13 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         done = {"__all__": False}
         if f_done:
             done["__all__"] = True
-            rew["high_level_agent"] = self.highTargetScore + self.lowTargetScore / (self.steps_remaining_at_level + 1)
+            rew["high_level_agent"] = (self.highTargetScore + self.lowTargetScore / (self.steps_remaining_at_level + 1))
             obs["high_level_agent"] = self.getHighLevelObs()
             obs[self.low_level_agent_id] = self.getLowLevelObs()
             rew[self.low_level_agent_id] = totalReward
         elif self.steps_remaining_at_level <= 0:
             # done[self.low_level_agent_id] = True
-            rew["high_level_agent"] = self.highTargetScore + self.lowTargetScore
+            rew["high_level_agent"] = (self.highTargetScore + self.lowTargetScore)
             obs["high_level_agent"] = self.getHighLevelObs()
         else:
             obs = {self.low_level_agent_id: self.getLowLevelObs()}

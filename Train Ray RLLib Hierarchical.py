@@ -19,6 +19,10 @@ import numpy as np
 from hier_env import HierarchicalHumanoidEnv
 from custom_callback import RewardLogCallback
 
+import os
+
+os.environ["TUNE_DISABLE_AUTO_CALLBACK_LOGGER"] = "1"
+
 # ray.shutdown()
 ray.init(ignore_reinit_error=True)
 
@@ -49,7 +53,7 @@ highLevelPolicy = (
     single_env.high_level_act_space,
     {
         "model": {
-            "fcnet_hiddens": [64, 4],
+            "fcnet_hiddens": [16, 8, 4],
             "fcnet_activation": "tanh",
             "free_log_std": True,
         },
@@ -90,7 +94,7 @@ config = {
     "clip_param": 0.2,
     "kl_coeff": 1.0,
     "num_sgd_iter": 20,
-    "lr": 0.0005,
+    "lr": 0.001,
     "sgd_minibatch_size": 8000,
     "train_batch_size": 24000,
     "batch_mode": "complete_episodes",
