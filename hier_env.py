@@ -28,29 +28,21 @@ def getJointPos(df, joint, multiplier=1):
     z = df[joint + "_Zposition"]
     return np.array([x, y, z]) * multiplier
 
-def getSphere(x, y, z):
-    body = pybullet.loadURDF(os.path.join(pybullet_data.getDataPath(), "sphere2red_nocol.urdf"), [x, y, z])
-    part_name, _ = pybullet.getBodyInfo(body)
-    part_name = part_name.decode("utf8")
-    bodies = [body]
-    return BodyPart(pybullet, part_name, bodies, 0, -1)
-
-
 class HierarchicalHumanoidEnv(MultiAgentEnv):
 
     metadata = {"render.modes": ["human", "rgb_array"], "video.frames_per_second": 60}
 
     def __init__(self):
         self.flat_env = gym.make("HumanoidBulletEnv-v0")
-        self.action_space = self.flat_env.action_space
-        self.observation_space = self.flat_env.observation_space
+        # self.action_space = self.flat_env.action_space
+        # self.observation_space = self.flat_env.observation_space
 
         reference_list = [
             ("Joints CSV/walk8_1JointPos.csv", "Joints CSV/walk8_1JointVecFromHip.csv"),
         ]
         num_reference = len(reference_list)
 
-        self.high_level_obs_space = self.observation_space
+        self.high_level_obs_space = self.flat_env.observation_space
         self.high_level_act_space = Box(
             low=-1.0, high=1.0, shape=[2]
         )  # [target_x, target_y]
@@ -58,7 +50,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.low_level_obs_space = Box(
             low=-np.inf, high=np.inf, shape=[17*2 + 2]
         )
-        self.low_level_act_space = self.action_space
+        self.low_level_act_space = self.flat_env.action_space
 
         self.step_per_level = 8
         self.steps_remaining_at_level = self.step_per_level
@@ -101,16 +93,16 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.joint_weight_sum = sum(self.joint_weight.values())
 
         self.end_point_map = {
-            "link0_12": "RightLeg",
+            "link0_11": "RightLeg",
             "right_foot": "RightFoot",
-            "link0_19": "LeftLeg",
+            "link0_18": "LeftLeg",
             "left_foot": "LeftFoot",
         }
 
         self.end_point_weight = {
-            "link0_12": 2,
+            "link0_11": 2,
             "right_foot": 1,
-            "link0_19": 2,
+            "link0_18": 2,
             "left_foot": 1,
         }
         self.end_point_weight_sum = sum(self.end_point_weight.values())
@@ -119,8 +111,8 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.deltaEndPoints = 0
         self.baseReward = 0
 
-        self.target = getSphere(1, 0, 0)
-        self.targetHighLevel = getSphere(0, 0, 0)
+        self.target = np.array([1, 0, 0])
+        self.targetHighLevel = np.array([0, 0, 0])
         self.skipFrame = 2
 
     def close(self):
@@ -171,8 +163,8 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         randomX = self.rng.integers(-20, 20)
         randomY = self.rng.integers(-20, 20)
-        self.target.reset_position([randomX, randomY, 0])
-        self.targetHighLevel.reset_position([0, 0, 0])
+        self.target = np.array([randomX, randomY, 0])
+        self.targetHighLevel = np.array([0, 0, 0])
         self.flat_env.walk_target_x = randomX
         self.flat_env.walk_target_y = randomY
         
@@ -184,7 +176,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         self.cur_obs = self.flat_env.robot.calc_state()
         return {
-            "high_level_agent": self.cur_obs,
+            "high_level_agent": self.cur_obs
         }
 
     def resetNonFrame(self):
@@ -201,8 +193,9 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.steps_remaining_at_level = self.step_per_level
         self.num_high_level_steps = 0
 
-        self.target.reset_position([0, 0, 0])
-        self.targetHighLevel.reset_position([0, 0, 0])
+        self.target = np.array([1, 0, 0])
+        self.targetHighLevel = np.array([0, 0, 0])
+        
         self.skipFrame = 2
 
         self.low_level_agent_id = "low_level_{}".format(self.num_high_level_steps)
@@ -237,7 +230,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         endPointRef = self.end_point_df.iloc[self.frame]
 
         base_pos = self.flat_env.parts["lwaist"].get_position()
-        r = R.from_euler('z', np.arctan2(self.targetHighLevel.get_position()[1], self.targetHighLevel.get_position()[0]))
+        r = R.from_euler('z', np.arctan2(self.targetHighLevel[1], self.targetHighLevel[0]))
 
         for epMap in self.end_point_map:
             v1 = self.flat_env.parts[epMap].get_position()
@@ -248,8 +241,8 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         return 2 * np.exp(-10 * deltaEndPoint / self.end_point_weight_sum)
     
     def calcTargetScore(self):
-        vTargetHL = self.targetHighLevel.get_position()
-        vTarget = self.target.get_position()
+        vTargetHL = self.targetHighLevel
+        vTarget = self.target
         vRobot = self.flat_env.parts['torso'].get_position()
 
         # Map ke 2d XY
@@ -270,21 +263,21 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         # Berikan low level agent nilai joint dan target high level
         jointVal = self.cur_obs[8:8+17*2]
 
-        return {self.low_level_agent_id: np.hstack((jointVal, self.targetHighLevel.get_position()[:2]))}
+        return np.hstack((jointVal, self.targetHighLevel[:2]))
 
     def getHighLevelObs(self):
-        return {'high_level_agent': self.cur_obs}
+        return self.cur_obs
 
     def high_level_step(self, action):
         self.current_goal = action
 
-        self.targetHighLevel.reset_position([action[0], action[1], 0])
-
+        self.targetHighLevel = np.array([action[0], action[1], 0])
+        
         self.steps_remaining_at_level = self.step_per_level
         self.num_high_level_steps += 1
         self.low_level_agent_id = "low_level_{}".format(self.num_high_level_steps)
 
-        obs = self.getLowLevelObs()
+        obs = {self.low_level_agent_id: self.getLowLevelObs()}
         rew = {self.low_level_agent_id: 0}
         done = {"__all__": False}
         return obs, rew, done, {}
@@ -319,7 +312,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
                 self.frame_update_cnt = 0
 
         # obs = {self.low_level_agent_id: np.hstack((f_obs, self.current_goal))}
-        obs = self.getLowLevelObs()
+        obs = {self.low_level_agent_id: self.getLowLevelObs()}
         rew = {self.low_level_agent_id: totalReward}
 
         # Handle env termination & transitions back to higher level
