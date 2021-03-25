@@ -52,7 +52,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         )
         self.low_level_act_space = self.flat_env.action_space
 
-        self.step_per_level = 50
+        self.step_per_level = 100
         self.steps_remaining_at_level = self.step_per_level
         self.num_high_level_steps = 0
 
@@ -81,13 +81,13 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         }
 
         self.joint_weight = {
-            "right_knee": 3,
+            "right_knee": 1.5,
             "right_hip_x": 1,
-            "right_hip_y": 3,
+            "right_hip_y": 1.5,
             "right_hip_z": 1,
-            "left_knee": 3,
+            "left_knee": 1.5,
             "left_hip_x": 1,
-            "left_hip_y": 3,
+            "left_hip_y": 1.5,
             "left_hip_z": 1,
         }
         self.joint_weight_sum = sum(self.joint_weight.values())
@@ -115,7 +115,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         self.target = np.array([1, 0, 0])
         self.targetHighLevel = np.array([0, 0, 0])
-        self.skipFrame = 2
+        self.skipFrame = 1
 
     def close(self):
         self.flat_env.close()
@@ -138,18 +138,25 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.flat_env.jdict["left_hip_z"].set_state(jointsRef["leftHipZ"], 0)
 
     def incFrame(self, inc):
-        self.frame = +inc
-        if self.frame >= self.max_frame - 1:
-            self.frame = 0
-            self.frame_update_cnt = 0
-
+        self.frame += inc
+        self.frame = self.frame % (self.max_frame - 1)
+    
     def reset(self):
         # Insialisasi dengan posisi awal random sesuai referensi
-        return self.resetFromFrame(self.rng.integers(0, self.max_frame - 5), self.rng.integers(-45, 45))
+        return self.resetFromFrame(self.rng.integers(0, self.max_frame - 5), self.rng.integers(-15, 15))
 
     def resetFromFrame(self, frame, resetYaw=0):
         self.flat_env.reset()
-        self.flat_env.parts["torso"].reset_position([0, 0, 1.15])
+
+        randomX = self.rng.integers(-20, 20)
+        randomY = self.rng.integers(-20, 20)
+        self.target = np.array([randomX, randomY, 0])
+        self.targetHighLevel = np.array([0, 0, 0])
+        self.flat_env.walk_target_x = randomX
+        self.flat_env.walk_target_y = randomY
+
+        randomProgress = self.rng.random() * 0.8
+        self.flat_env.parts["torso"].reset_position([randomX * randomProgress, randomY * randomProgress, 1.15])
         self.flat_env.parts["torso"].reset_orientation(R.from_euler('z', resetYaw, degrees=True).as_quat())
 
         self.frame = frame
@@ -164,19 +171,13 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         self.steps_remaining_at_level = self.step_per_level
         self.num_high_level_steps = 0
-
-        randomX = self.rng.integers(-20, 20)
-        randomY = self.rng.integers(-20, 20)
-        self.target = np.array([randomX, randomY, 0])
-        self.targetHighLevel = np.array([0, 0, 0])
-        self.flat_env.walk_target_x = randomX
-        self.flat_env.walk_target_y = randomY
         
-        self.skipFrame = 2
+        self.skipFrame = 1
 
         self.incFrame(self.skipFrame)
 
-        self.low_level_agent_id = "low_level_{}".format(self.num_high_level_steps)
+        # self.low_level_agent_id = "low_level_{}".format(self.num_high_level_steps)
+        self.low_level_agent_id = "low_level_agent"
 
         self.cur_obs = self.flat_env.robot.calc_state()
         return {
@@ -202,9 +203,10 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.target = np.array([1, 0, 0])
         self.targetHighLevel = np.array([0, 0, 0])
         
-        self.skipFrame = 2
+        self.skipFrame = 1
 
-        self.low_level_agent_id = "low_level_{}".format(self.num_high_level_steps)
+        # self.low_level_agent_id = "low_level_{}".format(self.num_high_level_steps)
+        self.low_level_agent_id = "low_level_agent"
         return {
             "high_level_agent": self.cur_obs,
         }
@@ -257,7 +259,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         # Hitung jarak
         dRobotTarget = np.linalg.norm(vTarget - vRobot)
 
-        return np.exp(-dRobotTarget)
+        return np.exp(-dRobotTarget/5)
     
     def calcLowLevelTargetScore(self):
         vTargetHL = self.targetHighLevel
@@ -290,7 +292,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         
         self.steps_remaining_at_level = self.step_per_level
         self.num_high_level_steps += 1
-        self.low_level_agent_id = "low_level_{}".format(self.num_high_level_steps)
+        # self.low_level_agent_id = "low_level_{}".format(self.num_high_level_steps)
 
         obs = {self.low_level_agent_id: self.getLowLevelObs()}
         rew = {self.low_level_agent_id: 0}
@@ -315,33 +317,36 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         jumpReward = self.calcJumpReward(f_obs)  # Untuk task lompat
 
         reward = [self.baseReward, self.deltaJoints, self.deltaEndPoints, self.lowTargetScore, jumpReward]
-        rewardWeight = [1, 0.05, 1, 1, 0]
+        rewardWeight = [1, 0.1, 1, 1, 0]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):
             totalReward += r * w
 
-        if self.deltaJoints >= 0.5 and self.deltaEndPoints >= 0.5:
+        if self.deltaJoints >= 0.15 and self.deltaEndPoints >= 0.15:
             self.incFrame(self.skipFrame)
+            self.frame_update_cnt = 0
         else:
             self.frame_update_cnt += 1
             if self.frame_update_cnt > 5:
                 self.incFrame(self.skipFrame)
                 self.frame_update_cnt = 0
 
-        # obs = {self.low_level_agent_id: np.hstack((f_obs, self.current_goal))}
-        obs = {self.low_level_agent_id: self.getLowLevelObs()}
-        rew = {self.low_level_agent_id: totalReward}
-
+        rew, obs = dict(), dict()
         # Handle env termination & transitions back to higher level
         done = {"__all__": False}
         if f_done:
             done["__all__"] = True
-            rew["high_level_agent"] = self.highTargetScore + self.lowTargetScore + self.baseReward
+            rew["high_level_agent"] = self.highTargetScore + self.lowTargetScore / (self.steps_remaining_at_level + 1)
             obs["high_level_agent"] = self.getHighLevelObs()
+            obs[self.low_level_agent_id] = self.getLowLevelObs()
+            rew[self.low_level_agent_id] = totalReward
         elif self.steps_remaining_at_level <= 0:
-            done[self.low_level_agent_id] = True
-            rew["high_level_agent"] = self.highTargetScore + self.lowTargetScore + self.baseReward
+            # done[self.low_level_agent_id] = True
+            rew["high_level_agent"] = self.highTargetScore + self.lowTargetScore
             obs["high_level_agent"] = self.getHighLevelObs()
+        else:
+            obs = {self.low_level_agent_id: self.getLowLevelObs()}
+            rew = {self.low_level_agent_id: totalReward}
 
         return obs, rew, done, {}

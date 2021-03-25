@@ -49,7 +49,7 @@ highLevelPolicy = (
     single_env.high_level_act_space,
     {
         "model": {
-            "fcnet_hiddens": [256, 128, 64],
+            "fcnet_hiddens": [64, 4],
             "fcnet_activation": "tanh",
             "free_log_std": True,
         },
@@ -100,10 +100,9 @@ config = {
 tune.run(
     PPOTrainer,
     name="HWalk_Hier_Mimic",
-    resume=True,
+    resume=False,
     checkpoint_at_end=True,
-    checkpoint_freq=5,
-    keep_checkpoints_num=50,
+    checkpoint_freq=10,
     checkpoint_score_attr="episode_reward_mean",
     stop={"episode_reward_mean": TARGET_REWARD},
     config=config,

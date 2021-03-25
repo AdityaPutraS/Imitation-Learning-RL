@@ -103,7 +103,7 @@ class LowLevelHumanoidEnv(gym.Env):
         self.flat_env.jdict['left_hip_z'].set_state(jointsRef['leftHipZ'], 0)
 
     def incFrame(self, inc):
-        self.frame =+ inc
+        self.frame += inc
         if(self.frame >= self.max_frame - 1):
             self.frame = 0
             self.frame_update_cnt = 0
