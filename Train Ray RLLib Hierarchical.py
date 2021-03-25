@@ -19,10 +19,6 @@ import numpy as np
 from hier_env import HierarchicalHumanoidEnv
 from custom_callback import RewardLogCallback
 
-import os
-
-os.environ["TUNE_DISABLE_AUTO_CALLBACK_LOGGER"] = "1"
-
 # ray.shutdown()
 ray.init(ignore_reinit_error=True)
 
