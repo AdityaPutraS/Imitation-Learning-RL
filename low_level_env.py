@@ -126,13 +126,13 @@ class LowLevelHumanoidEnv(gym.Env):
     def resetFromFrame(self, frame, resetYaw=0):
         self.flat_env.reset()
 
-        randomX = self.rng.integers(0, 20)
+        randomX = self.rng.integers(-20, 20)
         randomY = self.rng.integers(-20, 20)
         self.targetHighLevel = np.array([randomX, randomY, 0])
         self.flat_env.walk_target_x = randomX
         self.flat_env.walk_target_y = randomY
 
-        randomProgress = self.rng.random() * 0.8
+        randomProgress = self.rng.random() * 0.5
         self.flat_env.parts["torso"].reset_position(
             [randomX * randomProgress, randomY * randomProgress, 1.15]
         )
@@ -220,16 +220,21 @@ class LowLevelHumanoidEnv(gym.Env):
         return np.exp(-10 * deltaEndPoint / self.end_point_weight_sum)
 
     def calcLowLevelTargetScore(self):
-        deltaRobotTarget = self.targetHighLevel = self.flat_env.parts[
-            "torso"
-        ].get_position()
-
-        deltaRobotTarget[2] = 0
+        robotPos = self.flat_env.parts["torso"].get_position()
+        robotPos[2] = 0
+        deltaRobotTarget = self.targetHighLevel - robotPos
 
         # Hitung jarak
         distRobotTargetHL = np.linalg.norm(deltaRobotTarget)
 
-        return np.exp(-5 * distRobotTargetHL)
+        if distRobotTargetHL <= 1.0:
+            randomX = self.rng.integers(0, 20)
+            randomY = self.rng.integers(-20, 20)
+            self.targetHighLevel = robotPos + np.array([randomX, randomY, 0])
+            self.flat_env.walk_target_x = self.targetHighLevel[0]
+            self.flat_env.walk_target_y = self.targetHighLevel[1]
+
+        return np.exp(-1 * distRobotTargetHL)
 
     def calcJumpReward(self, obs):
         return 0
@@ -248,8 +253,14 @@ class LowLevelHumanoidEnv(gym.Env):
 
         jumpReward = self.calcJumpReward(f_obs)  # Untuk task lompat
 
-        reward = [self.baseReward, self.deltaJoints, self.deltaEndPoints, self.lowTargetScore, jumpReward]
-        rewardWeight = [1, 0.2, 2, 1, 0]
+        reward = [
+            self.baseReward,
+            self.deltaJoints,
+            self.deltaEndPoints,
+            self.lowTargetScore,
+            jumpReward,
+        ]
+        rewardWeight = [0.125, 0.25, 0.25, 0.375, 0.0]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):
@@ -257,7 +268,7 @@ class LowLevelHumanoidEnv(gym.Env):
 
         obs = self.getLowLevelObs()
 
-        if self.deltaJoints >= 0.15 and self.deltaEndPoints >= 0.15:
+        if self.deltaJoints >= 0.15 and self.deltaEndPoints >= 0.09:
             self.incFrame(self.skipFrame)
             self.frame_update_cnt = 0
         else:
