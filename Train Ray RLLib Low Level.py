@@ -39,8 +39,8 @@ def policy_mapping_fn(agent_id):
 config = {
     "env": ENV_NAME,
     "callbacks": RewardLogCallback,
-    "num_workers": 6,
-    "num_envs_per_worker": 5,
+    "num_workers": 5,
+    "num_envs_per_worker": 10,
     "log_level": "WARN",
     "num_gpus": 1,
     "monitor": True,
@@ -50,7 +50,7 @@ config = {
     "clip_param": 0.2,
     "kl_coeff": 1.0,
     "num_sgd_iter": 20,
-    "lr": .0005,
+    "lr": 0.0001,
     "sgd_minibatch_size": 8000,
     "train_batch_size": 24000,
     "model": {
@@ -67,8 +67,7 @@ tune.run(
     name="HWalk_Low_Mimic",
     resume=False,
     checkpoint_at_end=True,
-    checkpoint_freq=5,
-    keep_checkpoints_num=50,
+    checkpoint_freq=10,
     checkpoint_score_attr="episode_reward_mean",
     stop={"episode_reward_mean": TARGET_REWARD},
     config=config
