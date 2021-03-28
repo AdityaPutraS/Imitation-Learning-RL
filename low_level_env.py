@@ -2,6 +2,7 @@ import gym
 import pybullet
 import pybullet_envs
 import pybullet_data
+from pybullet_envs.gym_locomotion_envs import HumanoidBulletEnv
 from gym.spaces import Box, Discrete, Tuple
 import logging
 import random
@@ -28,7 +29,7 @@ class LowLevelHumanoidEnv(gym.Env):
     metadata = {"render.modes": ["human", "rgb_array"], "video.frames_per_second": 60}
 
     def __init__(self):
-        self.flat_env = gym.make("HumanoidBulletEnv-v0")
+        self.flat_env = HumanoidBulletEnv()
 
         self.observation_space = Box(
             low=-np.inf, high=np.inf, shape=[1 + 5 + 17 * 2 + 2]
@@ -39,6 +40,9 @@ class LowLevelHumanoidEnv(gym.Env):
         self.end_point_df = pd.read_csv(
             "Processed Joints CSV/walk08_03JointVecFromHip.csv"
         )
+
+        self.cur_timestep = 0
+        self.max_timestep = 2000
 
         self.frame = 0
         self.frame_update_cnt = 0
@@ -126,6 +130,8 @@ class LowLevelHumanoidEnv(gym.Env):
     def resetFromFrame(self, frame, resetYaw=0):
         self.flat_env.reset()
 
+        self.cur_timestep = 0
+
         randomX = self.rng.integers(-20, 20)
         randomY = self.rng.integers(-20, 20)
         self.targetHighLevel = np.array([randomX, randomY, 0])
@@ -158,6 +164,8 @@ class LowLevelHumanoidEnv(gym.Env):
 
     def resetNonFrame(self):
         self.cur_obs = self.flat_env.reset()
+
+        self.cur_timestep = 0
 
         self.frame = 0
         self.frame_update_cnt = 0
@@ -268,13 +276,19 @@ class LowLevelHumanoidEnv(gym.Env):
 
         obs = self.getLowLevelObs()
 
-        if self.deltaJoints >= 0.15 and self.deltaEndPoints >= 0.09:
+        if self.deltaJoints >= 0.5 and self.deltaEndPoints >= 0.5:
             self.incFrame(self.skipFrame)
             self.frame_update_cnt = 0
         else:
             self.frame_update_cnt += 1
-            if self.frame_update_cnt > 10:
+            if self.frame_update_cnt > 20:
                 self.incFrame(self.skipFrame)
                 self.frame_update_cnt = 0
 
-        return obs, totalReward, f_done, {}
+        done = f_done
+        self.cur_timestep += 1
+        if(self.cur_timestep >= self.max_timestep):
+            done = True
+            self.cur_timestep = 0
+
+        return obs, totalReward, done, {}

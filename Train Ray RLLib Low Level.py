@@ -20,14 +20,12 @@ from custom_callback import RewardLogCallback
 ray.init(ignore_reinit_error=True)
 
 single_env = LowLevelHumanoidEnv()
-
+ENV_NAME = "HumanoidBulletEnvLow-v0"
 
 def make_env(env_config):
     import pybullet_envs
     return LowLevelHumanoidEnv()
 
-
-ENV_NAME = 'HumanoidBulletEnv-v0-Low'
 register_env(ENV_NAME, make_env)
 TARGET_REWARD = 5000
 
@@ -70,5 +68,5 @@ tune.run(
     checkpoint_freq=10,
     checkpoint_score_attr="episode_reward_mean",
     stop={"episode_reward_mean": TARGET_REWARD},
-    config=config
+    config=config,
 )
