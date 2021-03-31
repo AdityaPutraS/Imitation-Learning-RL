@@ -24,6 +24,8 @@ def getJointPos(df, joint, multiplier=1):
     z = df[joint + "_Zposition"]
     return np.array([x, y, z]) * multiplier
 
+def drawLine(c1, c2, color):
+    return pybullet.addUserDebugLine(c1, c2, lineColorRGB=color, lineWidth=5)
 
 class LowLevelHumanoidEnv(gym.Env):
     metadata = {"render.modes": ["human", "rgb_array"], "video.frames_per_second": 60}
@@ -106,6 +108,11 @@ class LowLevelHumanoidEnv(gym.Env):
 
     def setJointsOrientation(self, idx):
         jointsRef = self.joints_df.iloc[idx]
+
+        self.flat_env.jdict["abdomen_x"].set_state(0, 0)
+        self.flat_env.jdict["abdomen_y"].set_state(0, 0)
+        self.flat_env.jdict["abdomen_z"].set_state(0, 0)
+
         self.flat_env.jdict["right_knee"].set_state(jointsRef["rightKnee"], 0)
 
         self.flat_env.jdict["right_hip_x"].set_state(jointsRef["rightHipX"], 0)
@@ -222,10 +229,11 @@ class LowLevelHumanoidEnv(gym.Env):
         for epMap in self.end_point_map:
             v1 = self.flat_env.parts[epMap].get_position()
             v2 = base_pos + r.apply(getJointPos(endPointRef, self.end_point_map[epMap]))
+            # drawLine(base_pos, v2, [1, 0, 0])
             deltaVec = v2 - v1
             deltaEndPoint += np.linalg.norm(deltaVec) * self.end_point_weight[epMap]
 
-        return np.exp(-10 * deltaEndPoint / self.end_point_weight_sum)
+        return 15 * np.exp(-30 * deltaEndPoint / self.end_point_weight_sum)
 
     def calcLowLevelTargetScore(self):
         robotPos = self.flat_env.parts["torso"].get_position()
@@ -268,7 +276,7 @@ class LowLevelHumanoidEnv(gym.Env):
             self.lowTargetScore,
             jumpReward,
         ]
-        rewardWeight = [0.125, 0.25, 0.25, 0.375, 0.0]
+        rewardWeight = [0.15, 0.25, 0.35, 0.25, 0.0]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):
@@ -276,14 +284,14 @@ class LowLevelHumanoidEnv(gym.Env):
 
         obs = self.getLowLevelObs()
 
-        if self.deltaJoints >= 0.5 and self.deltaEndPoints >= 0.5:
+        if self.deltaJoints >= 0.4 and self.deltaEndPoints >= 0.2:
             self.incFrame(self.skipFrame)
             self.frame_update_cnt = 0
-        else:
-            self.frame_update_cnt += 1
-            if self.frame_update_cnt > 20:
-                self.incFrame(self.skipFrame)
-                self.frame_update_cnt = 0
+        # else:
+        #     self.frame_update_cnt += 1
+        #     if self.frame_update_cnt > 20:
+        #         self.incFrame(self.skipFrame)
+        #         self.frame_update_cnt = 0
 
         done = f_done
         self.cur_timestep += 1
