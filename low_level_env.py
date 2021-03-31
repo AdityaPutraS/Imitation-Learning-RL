@@ -124,7 +124,7 @@ class LowLevelHumanoidEnv(gym.Env):
     def reset(self):
         # Insialisasi dengan posisi awal random sesuai referensi
         return self.resetFromFrame(
-            self.rng.integers(0, self.max_frame - 5), self.rng.integers(-15, 15)
+            self.rng.integers(0, self.max_frame - 5), self.rng.integers(-5, 5)
         )
 
     def resetFromFrame(self, frame, resetYaw=0):
@@ -143,7 +143,7 @@ class LowLevelHumanoidEnv(gym.Env):
             [randomX * randomProgress, randomY * randomProgress, 1.15]
         )
         self.flat_env.parts["torso"].reset_orientation(
-            R.from_euler("z", resetYaw, degrees=True).as_quat()
+            R.from_euler("z", np.rad2deg(np.arctan2(randomY, randomX)) + resetYaw, degrees=True).as_quat()
         )
 
         self.frame = frame
@@ -236,7 +236,7 @@ class LowLevelHumanoidEnv(gym.Env):
         distRobotTargetHL = np.linalg.norm(deltaRobotTarget)
 
         if distRobotTargetHL <= 1.0:
-            randomX = self.rng.integers(0, 20)
+            randomX = self.rng.integers(-20, 20)
             randomY = self.rng.integers(-20, 20)
             self.targetHighLevel = robotPos + np.array([randomX, randomY, 0])
             self.flat_env.walk_target_x = self.targetHighLevel[0]
