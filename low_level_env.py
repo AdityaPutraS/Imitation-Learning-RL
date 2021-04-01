@@ -34,7 +34,7 @@ class LowLevelHumanoidEnv(gym.Env):
         self.flat_env = HumanoidBulletEnv()
 
         self.observation_space = Box(
-            low=-np.inf, high=np.inf, shape=[1 + 5 + 17 * 2 + 2]
+            low=-np.inf, high=np.inf, shape=[1 + 5 + 17 * 2 + 2 + 4 * 3]
         )
         self.action_space = self.flat_env.action_space
 
@@ -98,7 +98,7 @@ class LowLevelHumanoidEnv(gym.Env):
         self.lowTargetScore = 0
 
         self.targetHighLevel = np.array([0, 0, 0])
-        self.skipFrame = 1
+        self.skipFrame = 5
 
     def close(self):
         self.flat_env.close()
@@ -191,12 +191,26 @@ class LowLevelHumanoidEnv(gym.Env):
         robotInfo = self.cur_obs[3 : 3 + 5]
         jointVal = self.cur_obs[8 : 8 + 17 * 2]
 
-        deltaRobotTarget = self.targetHighLevel = self.flat_env.parts[
+        deltaRobotTarget = self.targetHighLevel - self.flat_env.parts[
             "torso"
         ].get_position()
 
+        endPointRef = self.end_point_df.iloc[self.frame]
+        base_pos = self.flat_env.parts["lwaist"].get_position()
+        r = R.from_euler(
+            "z", np.arctan2(self.targetHighLevel[1], self.targetHighLevel[0])
+        )
+
+        endPointObs = []
+        for epMap in self.end_point_map:
+            # v1 = self.flat_env.parts[epMap].get_position()
+            v2 = base_pos + r.apply(getJointPos(endPointRef, self.end_point_map[epMap]))
+            # endPointObs.append(v1)
+            endPointObs.append(v2)
+        endPointObs = np.array(endPointObs).ravel()
+
         return np.hstack(
-            (deltaZ, robotInfo, jointVal, deltaRobotTarget[0], deltaRobotTarget[1])
+            (deltaZ, robotInfo, jointVal, deltaRobotTarget[0], deltaRobotTarget[1], endPointObs)
         )
 
     def step(self, action):
@@ -276,13 +290,11 @@ class LowLevelHumanoidEnv(gym.Env):
             self.lowTargetScore,
             jumpReward,
         ]
-        rewardWeight = [0.15, 0.25, 0.35, 0.25, 0.0]
+        rewardWeight = [0.5, 1, 1, 0.1, 0.0]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):
             totalReward += r * w
-
-        obs = self.getLowLevelObs()
 
         if self.deltaJoints >= 0.4 and self.deltaEndPoints >= 0.2:
             self.incFrame(self.skipFrame)
@@ -293,6 +305,8 @@ class LowLevelHumanoidEnv(gym.Env):
         #         self.incFrame(self.skipFrame)
         #         self.frame_update_cnt = 0
 
+        obs = self.getLowLevelObs()
+        
         done = f_done
         self.cur_timestep += 1
         if(self.cur_timestep >= self.max_timestep):
