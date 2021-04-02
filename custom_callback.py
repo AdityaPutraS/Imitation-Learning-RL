@@ -23,6 +23,10 @@ class RewardLogCallback(DefaultCallbacks):
         episode.user_data["low_target_score"] = []
         episode.user_data["high_target_score"] = []
 
+        episode.user_data["delta_joints_velocity"] = []
+
+        episode.user_data["frame_update_cnt"] = []
+
     def on_episode_step(self, *, worker: RolloutWorker, base_env: BaseEnv,
                         episode: MultiAgentEpisode, env_index: int, **kwargs):
         dj = base_env.get_unwrapped()[0].deltaJoints
@@ -37,6 +41,11 @@ class RewardLogCallback(DefaultCallbacks):
         hts = base_env.get_unwrapped()[0].highTargetScore
         episode.user_data["low_target_score"].append(lts)
         episode.user_data["high_target_score"].append(hts)
+
+        djv = base_env.get_unwrapped()[0].deltaVelJoints
+        frameUpdate = base_env.get_unwrapped()[0].frame_update_cnt
+        episode.user_data["delta_joints_velocity"].append(djv)
+        episode.user_data["frame_update_cnt"].append(frameUpdate)
         
     def on_episode_end(self, *, worker: RolloutWorker, base_env: BaseEnv,
                        policies: Dict[str, Policy], episode: MultiAgentEpisode,
@@ -48,9 +57,15 @@ class RewardLogCallback(DefaultCallbacks):
         mean_lts = np.mean(episode.user_data["low_target_score"])
         mean_hts = np.mean(episode.user_data["high_target_score"])
 
+        mean_djv = np.mean(episode.user_data["delta_joints_velocity"])
+        mean_frameUpdate = np.mean(episode.user_data["frame_update_cnt"])
+
         episode.custom_metrics["delta_joints"] = mean_dj
         episode.custom_metrics["delta_end_point"] = mean_ep
         episode.custom_metrics["base_reward"] = mean_br
         
         episode.custom_metrics["low_target_score"] = mean_lts
         episode.custom_metrics["high_target_score"] = mean_hts
+
+        episode.custom_metrics["delta_joints_velocity"] = mean_djv
+        episode.custom_metrics["frame_update_cnt"] = mean_frameUpdate

@@ -1,6 +1,7 @@
 from low_level_env import LowLevelHumanoidEnv
 import pybullet
 import matplotlib.pyplot as plt
+import numpy as np
 
 qKey = ord('q')
 rKey = ord('r')
@@ -37,16 +38,35 @@ if __name__ == "__main__":
     # env.close()
 
     env = LowLevelHumanoidEnv()
-    frame = 80
+    frame = 80 - env.skipFrame
     obs = env.resetFromFrame(frame)
     ep = []
     js = []
+    jv = []
     for f in range(env.max_frame):
         env.setJointsOrientation(f)
         ep.append(env.calcEndPointScore())
         js.append(env.calcJointScore())
+        jv.append(env.calcJointVelScore())
     env.close()
+
+    x = np.arange(0, env.max_frame, 1)
+    epPolyCoef = np.polyfit(x, ep, 3)
+    jsPolyCoef = np.polyfit(x, js, 5)
+    jsPolyString = ''
+    for p, c in enumerate(jsPolyCoef):
+        jsPolyString += '{}x^{} + '.format(c, 5 - p)
+    print('Joint Score Polynomial: ', jsPolyString)
+
+    epPoly = np.poly1d(epPolyCoef)
+    jsPoly = np.poly1d(jsPolyCoef)
+
     plt.plot(ep)
     plt.plot(js)
-    plt.legend(['End Point', 'Joint Score'])
+    plt.plot(jv)
+    
+    # plt.plot(x, epPoly(x), '--')
+    # plt.plot(x, jsPoly(x), '--')
+
+    plt.legend(['End Point', 'Joint Score', 'End Point Approx', 'Joint Score Approx'])
     plt.show()

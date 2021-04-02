@@ -45,7 +45,7 @@ if __name__ == '__main__':
         "sgd_minibatch_size": 8000,
         "train_batch_size": 24000,
         "model": {
-            "fcnet_hiddens": [256, 128, 64],
+            "fcnet_hiddens": [512, 256, 128, 64],
             "fcnet_activation": "tanh",
             "free_log_std": True,
         },
@@ -55,8 +55,8 @@ if __name__ == '__main__':
     
     agent = PPOTrainer(config_low)
     experiment_name = "HWalk_Low_Mimic"
-    experiment_id = "PPO_HumanoidBulletEnvLow-v0_a1aa5_00000_0_2021-04-01_06-51-29"
-    checkpoint_num = "730"
+    experiment_id = "PPO_HumanoidBulletEnvLow-v0_9228e_00000_0_2021-04-02_19-28-39"
+    checkpoint_num = "940"
     agent.restore("/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(experiment_name, experiment_id, checkpoint_num, checkpoint_num))
 
     env = LowLevelHumanoidEnv()
@@ -75,8 +75,8 @@ if __name__ == '__main__':
         while(not done and not doneAll):
             action = agent.compute_action(observation)
             observation, reward, done, info = env.step(action)
-
-            drawText(str(env.frame), env.flat_env.parts["lwaist"].get_position() + np.array([0, 0, 1]), [0, 1, 0], 1.0/30)
+            print(observation)
+            # drawText(str(env.frame), env.flat_env.parts["lwaist"].get_position() + np.array([0, 0, 1]), [0, 1, 0], 1.0/30)
             # drawText(str(env.deltaJoints), env.flat_env.parts["lwaist"].get_position() + np.array([1, 0, 1]), [1, 0, 0], 1.0/30)
             # drawText(str(env.deltaEndPoints), env.flat_env.parts["lwaist"].get_position() + np.array([-1, 0, 1]), [0, 0, 1], 1.0/30)
             # TODO: visualisasikan frame yang sebenarnya
