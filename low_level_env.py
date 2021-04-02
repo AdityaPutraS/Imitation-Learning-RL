@@ -108,10 +108,10 @@ class LowLevelHumanoidEnv(gym.Env):
         }
 
         self.end_point_weight = {
-            "link0_11": 2,
-            "right_foot": 1,
-            "link0_18": 2,
-            "left_foot": 1,
+            "link0_11": 1,
+            "right_foot": 3,
+            "link0_18": 1,
+            "left_foot": 3,
         }
         self.end_point_weight_sum = sum(self.end_point_weight.values())
 
@@ -339,7 +339,7 @@ class LowLevelHumanoidEnv(gym.Env):
         self.deltaJoints = self.calcJointScore()  # Rentang -1 - 1
         self.deltaVelJoints = self.calcJointVelScore()
         self.deltaEndPoints = self.calcEndPointScore()  # Rentang -1 - 1
-        self.deltaEndPoints = 0
+        # self.deltaEndPoints = 0
         self.baseReward = f_rew
         self.lowTargetScore = self.calcLowLevelTargetScore()
 
