@@ -49,6 +49,10 @@ if __name__ == "__main__":
         js.append(env.calcJointScore())
         jv.append(env.calcJointVelScore())
     env.close()
+    
+    ep = np.array(ep)
+    js = np.array(js)
+    jv = np.array(jv)
 
     x = np.arange(0, env.max_frame, 1)
     epPolyCoef = np.polyfit(x, ep, 3)
@@ -62,11 +66,13 @@ if __name__ == "__main__":
     jsPoly = np.poly1d(jsPolyCoef)
 
     plt.plot(ep)
-    plt.plot(js)
-    plt.plot(jv)
+    plt.plot(np.exp(-ep) * 3 - 1.8)
+    plt.plot(np.exp(-ep * 2) * 3 - 1.6)
+    # plt.plot(js)
+    # plt.plot(jv)
     
     # plt.plot(x, epPoly(x), '--')
     # plt.plot(x, jsPoly(x), '--')
-
-    plt.legend(['End Point', 'Joint Score', 'End Point Approx', 'Joint Score Approx'])
+    plt.legend(['End Point Mean', 'End Point Score', 'End Point Log'])
+    # plt.legend(['End Point', 'Joint Score', 'End Point Approx', 'Joint Score Approx'])
     plt.show()

@@ -122,7 +122,7 @@ class LowLevelHumanoidEnv(gym.Env):
         self.lowTargetScore = 0
 
         self.targetHighLevel = np.array([0, 0, 0])
-        self.skipFrame = 2
+        self.skipFrame = 1
 
     def close(self):
         self.flat_env.close()
@@ -164,22 +164,22 @@ class LowLevelHumanoidEnv(gym.Env):
 
         self.cur_timestep = 0
 
-        # randomX = self.rng.integers(-20, 20)
-        # randomY = self.rng.integers(-20, 20)
-        randomX = 1e3
-        randomY = 0
+        randomX = self.rng.integers(-20, 20)
+        randomY = self.rng.integers(-20, 20)
+        # randomX = 1e3
+        # randomY = 0
         self.targetHighLevel = np.array([randomX, randomY, 0])
         self.flat_env.walk_target_x = randomX
         self.flat_env.walk_target_y = randomY
 
-        # randomProgress = self.rng.random() * 0.5
-        randomProgress = 0
+        randomProgress = self.rng.random() * 0.5
+        # randomProgress = 0
         self.flat_env.parts["torso"].reset_position(
             [randomX * randomProgress, randomY * randomProgress, 1.15]
         )
-        # self.flat_env.parts["torso"].reset_orientation(
-        #     R.from_euler("z", np.rad2deg(np.arctan2(randomY, randomX)) + resetYaw, degrees=True).as_quat()
-        # )
+        self.flat_env.parts["torso"].reset_orientation(
+            R.from_euler("z", np.rad2deg(np.arctan2(randomY, randomX)) + resetYaw, degrees=True).as_quat()
+        )
 
         self.frame = frame
         self.frame_update_cnt = 0
@@ -304,8 +304,8 @@ class LowLevelHumanoidEnv(gym.Env):
             deltaVec = v2 - v1
             deltaEndPoint += np.linalg.norm(deltaVec) * self.end_point_weight[epMap]
 
-        score = np.exp(-1 * deltaEndPoint / self.end_point_weight_sum)
-        return score * 3 - 1.8
+        score = np.exp(-2 * deltaEndPoint / self.end_point_weight_sum)
+        return score * 3 - 1.6
         # return 15 * np.exp(-30 * deltaEndPoint / self.end_point_weight_sum)
         # return deltaEndPoint / self.end_point_weight_sum
 
@@ -353,7 +353,7 @@ class LowLevelHumanoidEnv(gym.Env):
             self.lowTargetScore,
             jumpReward,
         ]
-        rewardWeight = [0.25, 0.25, 0.25, 0.25, 0.1, 0.0]
+        rewardWeight = [1, 0.25, 0.25, 0.25, 0.5, 0.0]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):

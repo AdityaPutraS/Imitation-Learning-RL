@@ -57,7 +57,7 @@ config = {
         "free_log_std": True,
     },
     "batch_mode": "complete_episodes",
-    "observation_filter": "MeanStdFilter",
+    "observation_filter": "NoFilter",
     "framework": "tf",
 }
 
