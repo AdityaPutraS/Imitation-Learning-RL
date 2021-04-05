@@ -41,17 +41,19 @@ class LowLevelHumanoidEnv(gym.Env):
         self.observation_space = Box(low=-np.inf, high=np.inf, shape=[44 + 8 * 2])
         self.action_space = self.flat_env.action_space
 
+        reference_name = "walk09_01"
+
         self.joints_df = pd.read_csv(
-            "Processed Relative Joints CSV/walk08_03JointPosRad.csv"
+            "Processed Relative Joints CSV/{}JointPosRad.csv".format(reference_name)
         )
         self.joints_vel_df = pd.read_csv(
-            "Processed Relative Joints CSV/walk08_03JointSpeedRadSec.csv"
+            "Processed Relative Joints CSV/{}JointSpeedRadSec.csv".format(reference_name)
         )
         self.joints_rel_df = pd.read_csv(
-            "Processed Relative Joints CSV/walk08_03JointPosRadRelative.csv"
+            "Processed Relative Joints CSV/{}JointPosRadRelative.csv".format(reference_name)
         )
         self.end_point_df = pd.read_csv(
-            "Processed Relative Joints CSV/walk08_03JointVecFromHip.csv"
+            "Processed Relative Joints CSV/{}JointVecFromHip.csv".format(reference_name)
         )
 
         self.cur_timestep = 0
@@ -59,9 +61,10 @@ class LowLevelHumanoidEnv(gym.Env):
 
         self.frame = 0
         self.frame_update_cnt = 0
-        self.max_frame = (
-            125  # Untuk 08_03, frame 0 - 125 merupakan siklus (2 - 127 di blender)
-        )
+
+        # Untuk 08_03, frame 0 - 125 merupakan siklus (2 - 127 di blender)
+        # Untuk 09_01, frame 0 - 90 merupakan siklus (1 - 91 di blender)
+        self.max_frame = 90
 
         self.rng = np.random.default_rng()
 
@@ -115,14 +118,19 @@ class LowLevelHumanoidEnv(gym.Env):
         }
         self.end_point_weight_sum = sum(self.end_point_weight.values())
 
+        self.initReward()
+
+        self.targetHighLevel = np.array([0, 0, 0])
+        self.skipFrame = 1
+
+    def initReward(self):
         self.deltaJoints = 0
         self.deltaVelJoints = 0
         self.deltaEndPoints = 0
         self.baseReward = 0
         self.lowTargetScore = 0
-
-        self.targetHighLevel = np.array([0, 0, 0])
-        self.skipFrame = 1
+        self.highTargetScore = 0
+        self.aliveReward = 0
 
     def close(self):
         self.flat_env.close()
@@ -164,33 +172,28 @@ class LowLevelHumanoidEnv(gym.Env):
 
         self.cur_timestep = 0
 
-        randomX = self.rng.integers(-20, 20)
-        randomY = self.rng.integers(-20, 20)
-        # randomX = 1e3
-        # randomY = 0
+        # randomX = self.rng.integers(-20, 20)
+        # randomY = self.rng.integers(-20, 20)
+        randomX = 1e3
+        randomY = 0
         self.targetHighLevel = np.array([randomX, randomY, 0])
         self.flat_env.walk_target_x = randomX
         self.flat_env.walk_target_y = randomY
 
-        randomProgress = self.rng.random() * 0.5
-        # randomProgress = 0
+        # randomProgress = self.rng.random() * 0.5
+        randomProgress = 0
         self.flat_env.parts["torso"].reset_position(
             [randomX * randomProgress, randomY * randomProgress, 1.15]
         )
-        self.flat_env.parts["torso"].reset_orientation(
-            R.from_euler("z", np.rad2deg(np.arctan2(randomY, randomX)) + resetYaw, degrees=True).as_quat()
-        )
+        # self.flat_env.parts["torso"].reset_orientation(
+        #     R.from_euler("z", np.rad2deg(np.arctan2(randomY, randomX)) + resetYaw, degrees=True).as_quat()
+        # )
 
         self.frame = frame
         self.frame_update_cnt = 0
         self.setJointsOrientation(self.frame)
 
-        self.deltaJoints = 0
-        self.deltaVelJoints = 0
-        self.deltaEndPoints = 0
-        self.baseReward = 0
-        self.lowTargetScore = 0
-        self.highTargetScore = 0
+        self.initReward()
 
         self.cur_obs = self.flat_env.robot.calc_state()
 
@@ -206,12 +209,7 @@ class LowLevelHumanoidEnv(gym.Env):
         self.frame = 0
         self.frame_update_cnt = 0
 
-        self.deltaJoints = 0
-        self.deltaVelJoints = 0
-        self.deltaEndPoints = 0
-        self.baseReward = 0
-        self.lowTargetScore = 0
-        self.highTargetScore = 0
+        self.initReward()
 
         return self.cur_obs
 
@@ -329,6 +327,11 @@ class LowLevelHumanoidEnv(gym.Env):
     def calcJumpReward(self, obs):
         return 0
 
+    def calcAliveReward(self):
+        # Didapat dari perhitungan reward alive env humanoid
+        z = self.cur_obs[0] + self.flat_env.robot.initial_z
+        return +2 if z > 0.78 else -1
+        
     def low_level_step(self, action):
         # Step di env yang sebenarnya
         f_obs, f_rew, f_done, _ = self.flat_env.step(action)
@@ -342,6 +345,7 @@ class LowLevelHumanoidEnv(gym.Env):
         # self.deltaEndPoints = 0
         self.baseReward = f_rew
         self.lowTargetScore = self.calcLowLevelTargetScore()
+        self.aliveReward = self.calcAliveReward()
 
         jumpReward = self.calcJumpReward(f_obs)  # Untuk task lompat
 
@@ -351,9 +355,10 @@ class LowLevelHumanoidEnv(gym.Env):
             self.deltaVelJoints,
             self.deltaEndPoints,
             self.lowTargetScore,
+            self.aliveReward,
             jumpReward,
         ]
-        rewardWeight = [1, 0.25, 0.25, 0.25, 0.5, 0.0]
+        rewardWeight = [0, 0.25, 0.25, 0.25, 0.1, 1, 0.0]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):

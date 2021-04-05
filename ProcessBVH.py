@@ -13,9 +13,9 @@ import time
 
 BVH_FILE = "Dataset/CMU_Mocap_BVH/08/08_01.bvh"
 BASE_DATASET_PATH = "Dataset/CMU_Mocap_BVH"
-SUBJECT_LIST = ["08"]
+SUBJECT_LIST = ["09"]
 # MOTION_LIST = [['01', '02', '03', '06', '08', '09', '10']]
-MOTION_LIST = [["03"]]
+MOTION_LIST = [["01"]]
 TIME_STEP_BVH = 0.0083333
 TIME_STEP_PYBULLET = (
     0.0165  # Didapat dari TimeStep * FrameSkip di gym_locomotion_envs.py milik pybullet
@@ -167,10 +167,13 @@ if __name__ == "__main__":
             )
             mp = MocapParameterizer("position")
             bvh_pos = mp.fit_transform([parsed_data])[0].values
+            
+            start_frame = 1
+            end_frame = 91
 
             # Process vektor hips -> joint untuk setiap endpoint
             normalized_data = np.zeros((1, len(ENDPOINT_LIST) * 3))
-            for i in range(1, len(bvh_pos)):
+            for i in range(start_frame, end_frame):
                 basePos = _getJointPos(bvh_pos, "Hips", i, JOINT_MULTIPLIER)
                 tmp = []
                 for ep in ENDPOINT_LIST:
@@ -195,13 +198,13 @@ if __name__ == "__main__":
             )
             print("    Calculate joint pos for motion {}_{}".format(sub, mot))
 
-            # env.render()
+            env.render()
             obs = env.reset()
 
             # Hitung nilai radian joint setiap waktu
             joint_data = []
             joint_data_rel = []
-            for i in range(1, len(bvh_pos)):
+            for i in range(start_frame, end_frame):
                 absolute, relative = setJoint(i, env, bvh_pos)
                 joint_data.append(absolute)
                 joint_data_rel.append(relative)
@@ -244,7 +247,7 @@ if __name__ == "__main__":
             # Hitung kecepatan setiap joint dalam rad/s
             joint_vel = [[0 for _ in joint_df.columns]]
             joint_rad_np = joint_df.to_numpy()
-            for i in range(2, len(joint_rad_np)):
+            for i in range(start_frame+1, len(joint_rad_np)):
                 posAwal = joint_rad_np[i - 1]
                 posAkhir = joint_rad_np[i]
                 vel = (posAkhir - posAwal) / TIME_STEP_PYBULLET
