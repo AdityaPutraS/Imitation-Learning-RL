@@ -41,7 +41,7 @@ class LowLevelHumanoidEnv(gym.Env):
         self.observation_space = Box(low=-np.inf, high=np.inf, shape=[44 + 8 * 2])
         self.action_space = self.flat_env.action_space
 
-        reference_name = "walk09_01"
+        reference_name = "walk08_03"
 
         self.joints_df = pd.read_csv(
             "Processed Relative Joints CSV/{}JointPosRad.csv".format(reference_name)
@@ -57,14 +57,15 @@ class LowLevelHumanoidEnv(gym.Env):
         )
 
         self.cur_timestep = 0
-        self.max_timestep = 2000
+        self.max_timestep = 3000
 
         self.frame = 0
         self.frame_update_cnt = 0
 
         # Untuk 08_03, frame 0 - 125 merupakan siklus (2 - 127 di blender)
         # Untuk 09_01, frame 0 - 90 merupakan siklus (1 - 91 di blender)
-        self.max_frame = 90
+        # Untuk 02_04, frame 0 - 298 (2 - 300 di blender)
+        self.max_frame = 125
 
         self.rng = np.random.default_rng()
 
@@ -164,7 +165,7 @@ class LowLevelHumanoidEnv(gym.Env):
     def reset(self):
         # Insialisasi dengan posisi awal random sesuai referensi
         return self.resetFromFrame(
-            self.rng.integers(0, self.max_frame - 5), self.rng.integers(-5, 5)
+            self.rng.integers(0, self.max_frame - 5), self.rng.integers(-15, 15)
         )
 
     def resetFromFrame(self, frame, resetYaw=0):
@@ -185,9 +186,9 @@ class LowLevelHumanoidEnv(gym.Env):
         self.flat_env.parts["torso"].reset_position(
             [randomX * randomProgress, randomY * randomProgress, 1.15]
         )
-        # self.flat_env.parts["torso"].reset_orientation(
-        #     R.from_euler("z", np.rad2deg(np.arctan2(randomY, randomX)) + resetYaw, degrees=True).as_quat()
-        # )
+        self.flat_env.parts["torso"].reset_orientation(
+            R.from_euler("z", np.rad2deg(np.arctan2(randomY, randomX)) + resetYaw, degrees=True).as_quat()
+        )
 
         self.frame = frame
         self.frame_update_cnt = 0
@@ -330,7 +331,8 @@ class LowLevelHumanoidEnv(gym.Env):
     def calcAliveReward(self):
         # Didapat dari perhitungan reward alive env humanoid
         z = self.cur_obs[0] + self.flat_env.robot.initial_z
-        return +2 if z > 0.78 else -1
+        # return +2 if z > 0.78 else -1
+        return +2 if z > 0.5 else -1
         
     def low_level_step(self, action):
         # Step di env yang sebenarnya
@@ -358,7 +360,7 @@ class LowLevelHumanoidEnv(gym.Env):
             self.aliveReward,
             jumpReward,
         ]
-        rewardWeight = [0, 0.25, 0.25, 0.25, 0.1, 1, 0.0]
+        rewardWeight = [1, 0.25, 0.25, 0.25, 0.1, 0, 0.0]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):

@@ -13,9 +13,19 @@ import time
 
 BVH_FILE = "Dataset/CMU_Mocap_BVH/08/08_01.bvh"
 BASE_DATASET_PATH = "Dataset/CMU_Mocap_BVH"
-SUBJECT_LIST = ["09"]
+SUBJECT_LIST = ["02"]
 # MOTION_LIST = [['01', '02', '03', '06', '08', '09', '10']]
-MOTION_LIST = [["01"]]
+MOTION_LIST = [["04"]]
+START_FRAME = [[1]]
+END_FRAME = [[300]]
+MOTION = [
+    {
+        "subject": "02",
+        "motion_number": "04",
+        "start_frame": 1,
+        "end_frame": 300,
+    }
+]
 TIME_STEP_BVH = 0.0083333
 TIME_STEP_PYBULLET = (
     0.0165  # Didapat dari TimeStep * FrameSkip di gym_locomotion_envs.py milik pybullet
@@ -158,104 +168,105 @@ def setJoint(frame, env, df):
 
 if __name__ == "__main__":
     env = gym.make("HumanoidBulletEnv-v0")
-    for idxSub, sub in enumerate(SUBJECT_LIST):
-        for mot in MOTION_LIST[idxSub]:
-            print("Processing Motion {}_{}".format(sub, mot))
-            parser = BVHParser()
-            parsed_data = parser.parse(
-                "{}/{}/{}_{}.bvh".format(BASE_DATASET_PATH, sub, sub, mot)
-            )
-            mp = MocapParameterizer("position")
-            bvh_pos = mp.fit_transform([parsed_data])[0].values
-            
-            start_frame = 1
-            end_frame = 91
+    for m in MOTION:
+        sub = m["subject"]
+        mot = m["motion_number"]
+        start_frame = m["start_frame"]
+        end_frame = m["end_frame"]
 
-            # Process vektor hips -> joint untuk setiap endpoint
-            normalized_data = np.zeros((1, len(ENDPOINT_LIST) * 3))
-            for i in range(start_frame, end_frame):
-                basePos = _getJointPos(bvh_pos, "Hips", i, JOINT_MULTIPLIER)
-                tmp = []
-                for ep in ENDPOINT_LIST:
-                    epPos = _getJointPos(bvh_pos, ep, i, JOINT_MULTIPLIER)
-                    tmp = np.hstack((tmp, epPos - basePos))
-                normalized_data = np.vstack((normalized_data, tmp))
-            normalized_data = normalized_data[1:]
-            norm_df = pd.DataFrame(
-                normalized_data,
-                columns=[
-                    "{}_{}position".format(ep, axis)
-                    for ep in ENDPOINT_LIST
-                    for axis in ["X", "Y", "Z"]
-                ],
-            )
-            norm_df.to_csv(
-                "{}/walk{}_{}JointVecFromHip.csv".format(OUT_FOLDER, sub, mot),
-                index=False,
-            )
-            print(
-                "    Done process normalized vector for motion {}_{}".format(sub, mot)
-            )
-            print("    Calculate joint pos for motion {}_{}".format(sub, mot))
+        print("Processing Motion {}_{}".format(sub, mot))
+        parser = BVHParser()
+        parsed_data = parser.parse(
+            "{}/{}/{}_{}.bvh".format(BASE_DATASET_PATH, sub, sub, mot)
+        )
+        mp = MocapParameterizer("position")
+        bvh_pos = mp.fit_transform([parsed_data])[0].values
 
-            env.render()
-            obs = env.reset()
+        # Process vektor hips -> joint untuk setiap endpoint
+        normalized_data = np.zeros((1, len(ENDPOINT_LIST) * 3))
+        for i in range(start_frame, end_frame):
+            basePos = _getJointPos(bvh_pos, "Hips", i, JOINT_MULTIPLIER)
+            tmp = []
+            for ep in ENDPOINT_LIST:
+                epPos = _getJointPos(bvh_pos, ep, i, JOINT_MULTIPLIER)
+                tmp = np.hstack((tmp, epPos - basePos))
+            normalized_data = np.vstack((normalized_data, tmp))
+        normalized_data = normalized_data[1:]
+        norm_df = pd.DataFrame(
+            normalized_data,
+            columns=[
+                "{}_{}position".format(ep, axis)
+                for ep in ENDPOINT_LIST
+                for axis in ["X", "Y", "Z"]
+            ],
+        )
+        norm_df.to_csv(
+            "{}/motion{}_{}JointVecFromHip.csv".format(OUT_FOLDER, sub, mot),
+            index=False,
+        )
+        print(
+            "    Done process normalized vector for motion {}_{}".format(sub, mot)
+        )
+        print("    Calculate joint pos for motion {}_{}".format(sub, mot))
 
-            # Hitung nilai radian joint setiap waktu
-            joint_data = []
-            joint_data_rel = []
-            for i in range(start_frame, end_frame):
-                absolute, relative = setJoint(i, env, bvh_pos)
-                joint_data.append(absolute)
-                joint_data_rel.append(relative)
-                time.sleep(1.0 / 60)
-            joint_df = pd.DataFrame(
-                joint_data,
-                columns=[
-                    "rightHipX",
-                    "rightHipY",
-                    "rightHipZ",
-                    "rightKnee",
-                    "leftHipX",
-                    "leftHipY",
-                    "leftHipZ",
-                    "leftKnee",
-                ],
-            )
-            joint_df.to_csv(
-                "{}/walk{}_{}JointPosRad.csv".format(OUT_FOLDER, sub, mot), index=False
-            )
+        env.render()
+        obs = env.reset()
 
-            joint_df_rel = pd.DataFrame(
-                joint_data_rel,
-                columns=[
-                    "rightHipX",
-                    "rightHipY",
-                    "rightHipZ",
-                    "rightKnee",
-                    "leftHipX",
-                    "leftHipY",
-                    "leftHipZ",
-                    "leftKnee",
-                ],
-            )
-            joint_df_rel.to_csv(
-                "{}/walk{}_{}JointPosRadRelative.csv".format(OUT_FOLDER, sub, mot), index=False
-            )
-            print("    Done calculate joint pos for motion {}_{}".format(sub, mot))
+        # Hitung nilai radian joint setiap waktu
+        joint_data = []
+        joint_data_rel = []
+        for i in range(start_frame, end_frame):
+            absolute, relative = setJoint(i, env, bvh_pos)
+            joint_data.append(absolute)
+            joint_data_rel.append(relative)
+            time.sleep(1.0 / 60)
+        joint_df = pd.DataFrame(
+            joint_data,
+            columns=[
+                "rightHipX",
+                "rightHipY",
+                "rightHipZ",
+                "rightKnee",
+                "leftHipX",
+                "leftHipY",
+                "leftHipZ",
+                "leftKnee",
+            ],
+        )
+        joint_df.to_csv(
+            "{}/motion{}_{}JointPosRad.csv".format(OUT_FOLDER, sub, mot), index=False
+        )
 
-            # Hitung kecepatan setiap joint dalam rad/s
-            joint_vel = [[0 for _ in joint_df.columns]]
-            joint_rad_np = joint_df.to_numpy()
-            for i in range(start_frame+1, len(joint_rad_np)):
-                posAwal = joint_rad_np[i - 1]
-                posAkhir = joint_rad_np[i]
-                vel = (posAkhir - posAwal) / TIME_STEP_PYBULLET
-                joint_vel.append(vel)
-            joint_vel_df = pd.DataFrame(joint_vel, columns=joint_df.columns)
-            joint_vel_df.to_csv(
-                "{}/walk{}_{}JointSpeedRadSec.csv".format(OUT_FOLDER, sub, mot),
-                index=False,
-            )
-            print("    Done calculate joint velocity for motion {}_{}".format(sub, mot))
+        joint_df_rel = pd.DataFrame(
+            joint_data_rel,
+            columns=[
+                "rightHipX",
+                "rightHipY",
+                "rightHipZ",
+                "rightKnee",
+                "leftHipX",
+                "leftHipY",
+                "leftHipZ",
+                "leftKnee",
+            ],
+        )
+        joint_df_rel.to_csv(
+            "{}/motion{}_{}JointPosRadRelative.csv".format(OUT_FOLDER, sub, mot), index=False
+        )
+        print("    Done calculate joint pos for motion {}_{}".format(sub, mot))
+
+        # Hitung kecepatan setiap joint dalam rad/s
+        joint_vel = [[0 for _ in joint_df.columns]]
+        joint_rad_np = joint_df.to_numpy()
+        for i in range(start_frame+1, len(joint_rad_np)):
+            posAwal = joint_rad_np[i - 1]
+            posAkhir = joint_rad_np[i]
+            vel = (posAkhir - posAwal) / TIME_STEP_PYBULLET
+            joint_vel.append(vel)
+        joint_vel_df = pd.DataFrame(joint_vel, columns=joint_df.columns)
+        joint_vel_df.to_csv(
+            "{}/motion{}_{}JointSpeedRadSec.csv".format(OUT_FOLDER, sub, mot),
+            index=False,
+        )
+        print("    Done calculate joint velocity for motion {}_{}".format(sub, mot))
     env.close()

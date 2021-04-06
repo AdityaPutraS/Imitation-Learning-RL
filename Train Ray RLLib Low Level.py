@@ -49,8 +49,8 @@ config = {
     "kl_coeff": 1.0,
     "num_sgd_iter": 20,
     "lr": 0.0005,
-    "sgd_minibatch_size": 8000,
-    "train_batch_size": 24000,
+    "sgd_minibatch_size": 12000,
+    "train_batch_size": 36000,
     "model": {
         "fcnet_hiddens": [1024, 512],
         "fcnet_activation": "tanh",
@@ -64,7 +64,7 @@ config = {
 tune.run(
     PPOTrainer,
     name="HWalk_Low_Mimic",
-    resume=False,
+    resume=True,
     checkpoint_at_end=True,
     checkpoint_freq=10,
     checkpoint_score_attr="episode_reward_mean",
