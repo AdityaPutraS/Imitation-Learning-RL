@@ -41,7 +41,7 @@ class LowLevelHumanoidEnv(gym.Env):
         self.observation_space = Box(low=-np.inf, high=np.inf, shape=[44 + 8 * 2])
         self.action_space = self.flat_env.action_space
 
-        reference_name = "walk08_03"
+        reference_name = "motion08_03"
 
         self.joints_df = pd.read_csv(
             "Processed Relative Joints CSV/{}JointPosRad.csv".format(reference_name)
@@ -173,10 +173,10 @@ class LowLevelHumanoidEnv(gym.Env):
 
         self.cur_timestep = 0
 
-        # randomX = self.rng.integers(-20, 20)
-        # randomY = self.rng.integers(-20, 20)
-        randomX = 1e3
-        randomY = 0
+        randomX = self.rng.integers(-500, 500)
+        randomY = self.rng.integers(-500, 500)
+        # randomX = 1e3
+        # randomY = 0
         self.targetHighLevel = np.array([randomX, randomY, 0])
         self.flat_env.walk_target_x = randomX
         self.flat_env.walk_target_y = randomY
@@ -317,8 +317,8 @@ class LowLevelHumanoidEnv(gym.Env):
         distRobotTargetHL = np.linalg.norm(deltaRobotTarget)
 
         if distRobotTargetHL <= 1.0:
-            randomX = self.rng.integers(-20, 20)
-            randomY = self.rng.integers(-20, 20)
+            randomX = self.rng.integers(-500, 500)
+            randomY = self.rng.integers(-500, 500)
             self.targetHighLevel = robotPos + np.array([randomX, randomY, 0])
             self.flat_env.walk_target_x = self.targetHighLevel[0]
             self.flat_env.walk_target_y = self.targetHighLevel[1]

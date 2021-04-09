@@ -13,3 +13,6 @@ def rotFrom2Vec(v1, v2):
         else:
             rotAngle = np.pi
     return R.from_rotvec(rotAxis * rotAngle)
+
+def map_seq(x, startX, endX, startY, endY):
+    return startY + (x - startX)/(endX - startX) * (endY - startY)

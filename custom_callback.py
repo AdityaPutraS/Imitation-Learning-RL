@@ -26,6 +26,8 @@ class RewardLogCallback(DefaultCallbacks):
         episode.user_data["delta_joints_velocity"] = []
         episode.user_data["alive_reward"] = []
 
+        episode.user_data["dist_from_origin"] = []
+
     def on_episode_step(self, *, worker: RolloutWorker, base_env: BaseEnv,
                         episode: MultiAgentEpisode, env_index: int, **kwargs):
         dj = base_env.get_unwrapped()[0].deltaJoints
@@ -45,6 +47,9 @@ class RewardLogCallback(DefaultCallbacks):
         ar = base_env.get_unwrapped()[0].aliveReward
         episode.user_data["delta_joints_velocity"].append(djv)
         episode.user_data["alive_reward"].append(ar)
+
+        robotDist = np.linalg.norm(base_env.get_unwrapped()[0].starting_ep_pos)
+        episode.user_data["dist_from_origin"].append(robotDist)
         
     def on_episode_end(self, *, worker: RolloutWorker, base_env: BaseEnv,
                        policies: Dict[str, Policy], episode: MultiAgentEpisode,
@@ -59,6 +64,8 @@ class RewardLogCallback(DefaultCallbacks):
         mean_djv = np.mean(episode.user_data["delta_joints_velocity"])
         mean_ar = np.mean(episode.user_data["alive_reward"])
 
+        mean_dfo = np.mean(episode.user_data["dist_from_origin"])
+
         episode.custom_metrics["delta_joints"] = mean_dj
         episode.custom_metrics["delta_end_point"] = mean_ep
         episode.custom_metrics["base_reward"] = mean_br
@@ -68,3 +75,5 @@ class RewardLogCallback(DefaultCallbacks):
 
         episode.custom_metrics["delta_joints_velocity"] = mean_djv
         episode.custom_metrics["alive_reward"] = mean_ar
+
+        episode.custom_metrics["dist_from_origin"] = mean_dfo

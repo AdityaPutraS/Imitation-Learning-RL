@@ -13,17 +13,24 @@ import time
 
 BVH_FILE = "Dataset/CMU_Mocap_BVH/08/08_01.bvh"
 BASE_DATASET_PATH = "Dataset/CMU_Mocap_BVH"
-SUBJECT_LIST = ["02"]
-# MOTION_LIST = [['01', '02', '03', '06', '08', '09', '10']]
-MOTION_LIST = [["04"]]
-START_FRAME = [[1]]
-END_FRAME = [[300]]
 MOTION = [
     {
         "subject": "02",
         "motion_number": "04",
         "start_frame": 1,
         "end_frame": 300,
+    },
+    {
+        "subject": "08",
+        "motion_number": "03",
+        "start_frame": 1,
+        "end_frame": 127,
+    },
+    {
+        "subject": "09",
+        "motion_number": "03",
+        "start_frame": 1,
+        "end_frame": 91,
     }
 ]
 TIME_STEP_BVH = 0.0083333
@@ -166,6 +173,13 @@ def setJoint(frame, env, df):
     ]
 
 
+# Jika USE_NORMALIZED_DF bernilai true, dataset jointvecfromhip akan berisi vektor tiap sendi relatif terhadap hips pada setiap framenya
+# Jika di visualisasikan sama saja seperti melakukan gerakan tapi posisi robot tetap diam di tempat
+# Jika USE_NORMALIZED_DF bernilai false, dataset berisi posisi absolut setiap sendi dalam koordinat global
+# Jika di visualisasikan maka akan terlihat berjalan / melompat, percis seperti di program blender
+# Set jadi false jika ingin membentuk dataset untuk hierarchical, true jika untuk low level saja
+USE_NORMALIZED_DF = False
+
 if __name__ == "__main__":
     env = gym.make("HumanoidBulletEnv-v0")
     for m in MOTION:
@@ -188,8 +202,11 @@ if __name__ == "__main__":
             basePos = _getJointPos(bvh_pos, "Hips", i, JOINT_MULTIPLIER)
             tmp = []
             for ep in ENDPOINT_LIST:
-                epPos = _getJointPos(bvh_pos, ep, i, JOINT_MULTIPLIER)
-                tmp = np.hstack((tmp, epPos - basePos))
+                epPos = getJointPos(bvh_pos, ep, i)
+                tmp = np.hstack((tmp, epPos))
+                if USE_NORMALIZED_DF:
+                    epPos = _getJointPos(bvh_pos, ep, i, JOINT_MULTIPLIER)
+                    tmp = np.hstack((tmp, epPos - basePos))
             normalized_data = np.vstack((normalized_data, tmp))
         normalized_data = normalized_data[1:]
         norm_df = pd.DataFrame(
