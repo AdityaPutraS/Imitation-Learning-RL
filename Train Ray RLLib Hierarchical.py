@@ -103,7 +103,7 @@ config = {
 tune.run(
     PPOTrainer,
     name="HWalk_Hier_Mimic",
-    resume=False,
+    resume=True,
     checkpoint_at_end=True,
     checkpoint_freq=10,
     checkpoint_score_attr="episode_reward_mean",

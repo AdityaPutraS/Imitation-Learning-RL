@@ -18,7 +18,7 @@ from ray.rllib.env import MultiAgentEnv
 from low_level_env import LowLevelHumanoidEnv
 
 from scipy.spatial.transform import Rotation as R
-from math_util import rotFrom2Vec, map_seq
+from math_util import rotFrom2Vec
 
 logger = logging.getLogger(__name__)
 
@@ -222,10 +222,10 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         self.cur_timestep = 0
 
-        # randomX = self.rng.integers(-500, 50)
-        # randomY = self.rng.integers(-500, 500)
-        randomX = 1e3
-        randomY = 0
+        randomX = self.rng.integers(-500, 500)
+        randomY = self.rng.integers(-500, 500)
+        # randomX = 1e3
+        # randomY = 0
         self.target = np.array([randomX, randomY, 0])
 
         # randomProgress = self.rng.random() * 0.8
@@ -414,25 +414,29 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         targetTheta = np.arctan2(
             self.target[1] - robotPos[1], self.target[0] - robotPos[0]
         )
-        r, p, yaw = self.flat_env.robot.robot_body.pose().rpy()
+        _, _, yaw = self.flat_env.robot.robot_body.pose().rpy()
         angleToTarget = targetTheta - yaw
         degTarget = [np.cos(angleToTarget), np.sin(angleToTarget)]
 
         return np.hstack((self.cur_obs[:1], degTarget, self.cur_obs[3:]))
 
     def high_level_step(self, action):
-        # Map sudut agar berada di sekitar -15 s/d 15 derajat
-        cosTarget = map_seq(action[0], -1, 1, 0, 0.9659) # 0.9659 = cos(+-15 derajat)
-        sinTarget = map_seq(action[1], -1, 1, -0.2588, 0.2588) # 0.2588 = sin(15 derajat), -0.2588 = sin(-15 derajat)
+        # Map sudut agar berada di sekitar -7.5 s/d 7.5 derajat
+        actionDegree = np.rad2deg(np.arctan2(action[1], action[0]))
+        _, _, yaw = self.flat_env.robot.robot_body.pose().rpy()
+        newDegree = np.interp(actionDegree, [-180, 180], [-7.5, 7.5]) + np.rad2deg(yaw)
+        cosTarget, sinTarget = np.cos(np.deg2rad(newDegree)), np.sin(np.deg2rad(newDegree))
         self.targetHighLevel = np.array([cosTarget, sinTarget, 0]) * self.targetHighLevelLen
+        # print('===', np.rad2deg(np.arctan2(action[1], action[0])), np.rad2deg(np.arctan2(sinTarget, cosTarget)), actionDegree, newDegree)
         self.flat_env.walk_target_x = self.targetHighLevel[0] * 50
         self.flat_env.walk_target_y = self.targetHighLevel[1] * 50
 
         vRobot = self.flat_env.parts["torso"].get_position()
         self.starting_ep_pos = np.array([vRobot[0], vRobot[1], 0])
         
-        self.selected_motion = int(map_seq(action[2], -1.0, 1.0, 0.0, len(self.motion_list) - 1))
-        self.selected_motion_frame = int(map_seq(action[3], -1.0, 1.0, 0.0, self.max_frame[self.selected_motion] - 1))
+        self.selected_motion = int(np.interp(action[2], [-1, 1], [0, len(self.motion_list) - 1]))
+        self.selected_motion_frame = int(np.interp(action[3], [-1, 1], [0, self.max_frame[self.selected_motion] - 1]))
+        # print("Mot, frame: ", self.selected_motion, self.selected_motion_frame)
         
         self.steps_remaining_at_level = self.step_per_level
         self.num_high_level_steps += 1
@@ -466,7 +470,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
             self.deltaVelJoints,
             self.deltaEndPoints
         ]
-        rewardWeight = [0.25, 0.25, 0.25, 1]
+        rewardWeight = [1, 0.25, 0.25, 0.3]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):

@@ -106,8 +106,8 @@ if __name__ == "__main__":
 
     agent = PPOTrainer(config)
     experiment_name = "HWalk_Hier_Mimic"
-    experiment_id = "PPO_HumanoidBulletEnvHier-v0_d9f3e_00000_0_2021-04-09_08-38-06"
-    checkpoint_num = "1760"
+    experiment_id = "PPO_HumanoidBulletEnvHier-v0_ae12f_00000_0_2021-04-09_18-45-20"
+    checkpoint_num = "620"
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name, experiment_id, checkpoint_num, checkpoint_num
@@ -136,8 +136,12 @@ if __name__ == "__main__":
             observation, reward, f_done, info = env.step(action)
             robotPos = env.flat_env.parts["lwaist"].get_position()
             robotPos[2] = 0
-            # drawLine(robotPos, robotPos + env.targetHighLevel * env.targetHighLevelLen, [0, 1, 0])
+            walkTarget = np.array([env.flat_env.walk_target_x, env.flat_env.walk_target_y, 1])
+            drawLine(robotPos, robotPos + env.targetHighLevel * env.targetHighLevelLen, [0, 1, 0])
+            drawLine(robotPos + np.array([0, 0, 1]), robotPos + walkTarget, [0, 0, 1])
             done = f_done['__all__']
+            if(done):
+                print(np.rad2deg(np.arctan2(env.targetHighLevel[1], env.targetHighLevel[0])))
             # print(observation)
             # drawText(str(env.frame), env.flat_env.parts["lwaist"].get_position() + np.array([0, 0, 1]), [0, 1, 0], 1.0/30)
             # drawText(str(env.deltaJoints), env.flat_env.parts["lwaist"].get_position() + np.array([1, 0, 1]), [1, 0, 0], 1.0/30)
