@@ -27,6 +27,7 @@ single_env = HierarchicalHumanoidEnv()
 
 def make_env(env_config):
     import pybullet_envs
+
     return HierarchicalHumanoidEnv()
 
 
@@ -100,10 +101,19 @@ config = {
     "observation_filter": "NoFilter",
 }
 
+experiment_name = "HWalk_Hier_Mimic"
+experiment_id = "PPO_HumanoidBulletEnvHier-v0_02a53_00000_0_2021-04-10_06-57-50"
+checkpoint_num = "550"
+
+resume = True
+
 tune.run(
     PPOTrainer,
     name="HWalk_Hier_Mimic",
-    resume=True,
+    # resume=resume,
+    restore="/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
+        experiment_name, experiment_id, checkpoint_num, checkpoint_num
+    ) if resume else "",
     checkpoint_at_end=True,
     checkpoint_freq=10,
     checkpoint_score_attr="episode_reward_mean",
