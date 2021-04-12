@@ -71,8 +71,8 @@ if __name__ == "__main__":
 
     agent = PPOTrainer(config_low)
     experiment_name = "HWalk_Low_Mimic"
-    experiment_id = "PPO_HumanoidBulletEnvLow-v0_ba848_00000_0_2021-04-12_16-40-26"
-    checkpoint_num = "210"
+    experiment_id = "PPO_HumanoidBulletEnvLow-v0_84a7a_00000_0_2021-04-12_17-43-21"
+    checkpoint_num = "550"
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name, experiment_id, checkpoint_num, checkpoint_num
@@ -103,17 +103,17 @@ if __name__ == "__main__":
             # Garis dari origin ke target akhir yang harus dicapai robot
             drawLine([0, 0, 0], env.target, [0, 1, 0])
             
-            walkTargetEnv = np.array([env.flat_env.walk_target_x, env.flat_env.walk_target_y, 0])
             robotPos = np.array(env.flat_env.robot.body_xyz)
             robotPos[2] = 0
             # Garis dari origin ke robot
-            drawLine([0, 0, 0], robotPos, [1, 1, 1])
+            # drawLine([0, 0, 0], robotPos, [1, 1, 1])
 
             # Garis dari robot ke walk target environment
-            drawLine(robotPos, walkTargetEnv, [0, 0, 0])
+            drawLine(robotPos, robotPos + env.targetHighLevel, [0, 0, 0])
 
-            drawLine([0, 0, 3], env.starting_ep_pos, [0, 0, 1])
+            drawLine(env.starting_ep_pos + np.array([0, 0, 1]), robotPos + env.targetHighLevel, [0, 0, 1])
 
+            drawLine(robotPos, [env.flat_env.robot.walk_target_x, env.flat_env.robot.walk_target_y, 0], [0, 0, 1])
             # print(observation)
             # drawText(str(env.frame), env.flat_env.parts["lwaist"].get_position() + np.array([0, 0, 1]), [0, 1, 0], 1.0/30)
             # drawText(str(env.deltaJoints), env.flat_env.parts["lwaist"].get_position() + np.array([1, 0, 1]), [1, 0, 0], 1.0/30)

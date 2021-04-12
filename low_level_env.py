@@ -179,6 +179,13 @@ class LowLevelHumanoidEnv(gym.Env):
         self.flat_env.robot.walk_target_x = x
         self.flat_env.robot.walk_target_y = y
 
+    def reassignWalkTarget(self):
+        vTargetRobot = self.target - self.robot_pos
+        self.targetHighLevel = vTargetRobot
+        vTargetRobot = vTargetRobot / np.linalg.norm(vTargetRobot)
+        walkTarget = self.robot_pos + vTargetRobot * self.targetHighLevelLen
+        self.setWalkTarget(walkTarget[0], walkTarget[1])
+
     def getRandomVec(self, vecLen, z):
         randomRad = np.deg2rad(self.rng.integers(-180, 180))
         randomX = np.cos(randomRad) * vecLen
@@ -199,14 +206,11 @@ class LowLevelHumanoidEnv(gym.Env):
         robotPos = np.array([0, 0, 1.15])
         self.robot_pos = np.array([robotPos[0], robotPos[1], 0])
 
-        self.targetHighLevel = self.target - self.robot_pos
-        normTargetHighLevel = self.targetHighLevel / np.linalg.norm(self.targetHighLevel)
-        walkTarget = self.robot_pos + normTargetHighLevel * self.targetHighLevelLen
-        self.setWalkTarget(walkTarget[0], walkTarget[1])
-        degToTarget = np.rad2deg(np.arctan2(self.targetHighLevel[1], self.targetHighLevel[0]))
+        self.reassignWalkTarget()
         
-    
         self.flat_env.robot.robot_body.reset_position(robotPos)
+        
+        degToTarget = np.rad2deg(np.arctan2(self.targetHighLevel[1], self.targetHighLevel[0]))
         self.flat_env.robot.robot_body.reset_orientation(R.from_euler("z", degToTarget, degrees=True).as_quat())       
         
         self.starting_ep_pos = self.robot_pos.copy()
@@ -307,12 +311,10 @@ class LowLevelHumanoidEnv(gym.Env):
             randomX = np.cos(randomRad) * 5
             randomY = np.sin(randomRad) * 5
             self.target = self.robot_pos + np.array([randomX, randomY, 0])
-
-            self.targetHighLevel = self.target - self.robot_pos
-            normTargetHighLevel = self.targetHighLevel / np.linalg.norm(self.targetHighLevel)
-            walkTarget = self.robot_pos + normTargetHighLevel * self.targetHighLevelLen
-            self.setWalkTarget(walkTarget[0], walkTarget[1])
-            degToTarget = np.rad2deg(np.arctan2(self.targetHighLevel[1], self.targetHighLevel[0]))
+            self.starting_ep_pos = self.robot_pos.copy()
+        
+        self.reassignWalkTarget()
+            
         
     def low_level_step(self, action):
         # Step di env yang sebenarnya
@@ -342,7 +344,7 @@ class LowLevelHumanoidEnv(gym.Env):
             self.deltaVelJoints,
             self.deltaEndPoints,
         ]
-        rewardWeight = [1, 0.25, 0.25, 0.1]
+        rewardWeight = [1, 0.25, 0.25, 0.3]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):
