@@ -166,7 +166,7 @@ class LowLevelHumanoidEnv(gym.Env):
     def incFrame(self, inc):
         self.frame = (self.frame + inc) % (self.max_frame - 1)
         if(self.frame == 0):
-            self.starting_ep_pos = self.robot_pos
+            self.starting_ep_pos = self.robot_pos.copy()
 
     def reset(self):
         # Insialisasi dengan posisi awal random sesuai referensi
@@ -195,7 +195,8 @@ class LowLevelHumanoidEnv(gym.Env):
         # self.target = np.array([4, 0, 0])
 
         # Posisi awal robot
-        robotPos = self.getRandomVec(3, 1.15)
+        # robotPos = self.getRandomVec(3, 1.15)
+        robotPos = np.array([0, 0, 1.15])
         self.robot_pos = np.array([robotPos[0], robotPos[1], 0])
 
         self.targetHighLevel = self.target - self.robot_pos
@@ -208,7 +209,7 @@ class LowLevelHumanoidEnv(gym.Env):
         self.flat_env.robot.robot_body.reset_position(robotPos)
         self.flat_env.robot.robot_body.reset_orientation(R.from_euler("z", degToTarget, degrees=True).as_quat())       
         
-        self.starting_ep_pos = self.robot_pos
+        self.starting_ep_pos = self.robot_pos.copy()
 
         self.frame = 0
         self.setJointsOrientation(self.frame)

@@ -38,7 +38,7 @@ config = {
     "env": ENV_NAME,
     "callbacks": RewardLogCallback,
     "num_workers": 6,
-    "num_envs_per_worker": 15,
+    "num_envs_per_worker": 20,
     "log_level": "WARN",
     "num_gpus": 1,
     "monitor": True,
@@ -64,7 +64,7 @@ config = {
 tune.run(
     PPOTrainer,
     name="HWalk_Low_Mimic",
-    resume=True,
+    resume=False,
     checkpoint_at_end=True,
     checkpoint_freq=10,
     checkpoint_score_attr="episode_reward_mean",
