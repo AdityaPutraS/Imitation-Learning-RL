@@ -106,8 +106,8 @@ if __name__ == "__main__":
 
     agent = PPOTrainer(config)
     experiment_name = "HWalk_Hier_Mimic"
-    experiment_id = "PPO_HumanoidBulletEnvHier-v0_48c1b_00000_0_2021-04-10_13-40-40"
-    checkpoint_num = "1220"
+    experiment_id = "PPO_HumanoidBulletEnvHier-v0_d6128_00000_0_2021-04-12_06-32-45"
+    checkpoint_num = "1250"
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name, experiment_id, checkpoint_num, checkpoint_num
@@ -125,6 +125,7 @@ if __name__ == "__main__":
         done = False
         env.render()
         observation = env.reset()
+        print(env.target, env.targetHighLevel)
         pybullet.removeAllUserDebugItems()
         drawAxis()
         while not done and not doneAll:
@@ -134,11 +135,15 @@ if __name__ == "__main__":
             else:
                 action[env.low_level_agent_id] = agent.compute_action(observation[env.low_level_agent_id], policy_id='low_level_policy')
             observation, reward, f_done, info = env.step(action)
+            # f_done = {'__all__': False}
             robotPos = env.flat_env.parts["lwaist"].get_position()
             robotPos[2] = 0
             walkTarget = np.array([env.flat_env.walk_target_x, env.flat_env.walk_target_y, 1])
-            drawLine(robotPos, robotPos + env.targetHighLevel * env.targetHighLevelLen, [0, 1, 0])
-            drawLine(robotPos + np.array([0, 0, 1]), robotPos + walkTarget, [0, 0, 1])
+            highTarget = env.targetHighLevel
+            highTarget[2] = 1
+            drawLine([0, 0, 0], env.target, [0, 1, 0])
+            # drawLine(robotPos + np.array([0, 0, 1]), robotPos + walkTarget, [0, 0, 1])
+            drawLine(robotPos + np.array([0, 0, 1]), robotPos + highTarget, [1, 1, 1])
             done = f_done['__all__']
             if(done):
                 print(np.rad2deg(np.arctan2(env.targetHighLevel[1], env.targetHighLevel[0])))
@@ -146,7 +151,6 @@ if __name__ == "__main__":
             # drawText(str(env.frame), env.flat_env.parts["lwaist"].get_position() + np.array([0, 0, 1]), [0, 1, 0], 1.0/30)
             # drawText(str(env.deltaJoints), env.flat_env.parts["lwaist"].get_position() + np.array([1, 0, 1]), [1, 0, 0], 1.0/30)
             # drawText(str(env.deltaEndPoints), env.flat_env.parts["lwaist"].get_position() + np.array([-1, 0, 1]), [0, 0, 1], 1.0/30)
-            # TODO: visualisasikan frame yang sebenarnya
 
             time.sleep(1.0 / fps)
 
@@ -156,5 +160,6 @@ if __name__ == "__main__":
                 doneAll = True
             elif rKey in keys and keys[rKey] & pybullet.KEY_WAS_TRIGGERED:
                 done = True
+        print("Survived {} steps".format(env.cur_timestep))
     env.close()
     ray.shutdown()

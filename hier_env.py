@@ -47,13 +47,13 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         self.high_level_obs_space = self.flat_env.observation_space
         self.high_level_act_space = Box(
-            low=-1, high=1, shape=[4]
+            low=-1, high=1, shape=[2]
         )  # cos(target), sin(target), mapping selected motion
 
         self.low_level_obs_space = Box(low=-np.inf, high=np.inf, shape=[44 + 8 * 2])
         self.low_level_act_space = self.flat_env.action_space
 
-        self.step_per_level = 30
+        self.step_per_level = 2
         self.steps_remaining_at_level = self.step_per_level
         self.num_high_level_steps = 0
 
@@ -222,8 +222,9 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         self.cur_timestep = 0
 
-        randomX = self.rng.integers(-10, 10)
-        randomY = self.rng.integers(-10, 10)
+        randomRad = np.deg2rad(self.rng.integers(-180, 180))
+        randomX = np.cos(randomRad) * 5
+        randomY = np.sin(randomRad) * 5
         # randomX = 1e3
         # randomY = 0
         self.target = np.array([randomX, randomY, 0])
@@ -235,14 +236,11 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         )
         self.flat_env.parts["torso"].reset_orientation(
             R.from_euler(
-                "z", np.rad2deg(np.arctan2(randomY, randomX)) + resetYaw, degrees=True
+                "z", np.rad2deg(randomRad) + resetYaw, degrees=True
             ).as_quat()
         )
         self.starting_ep_pos = np.array([randomX * randomProgress, randomY * randomProgress, 0])
-        self.targetHighLevel = (
-            np.array([np.cos(np.deg2rad(-resetYaw)), np.sin(np.deg2rad(-resetYaw)), 0])
-            * self.targetHighLevelLen
-        )
+        self.targetHighLevel = np.array([1, 0, 0]) * self.targetHighLevelLen
 
         self.flat_env.walk_target_x = self.targetHighLevel[0] * 50
         self.flat_env.walk_target_y = self.targetHighLevel[1] * 50
@@ -370,7 +368,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         # Hitung jarak
         dRobotTarget = np.linalg.norm(vTarget - vRobot)
 
-        return 2 * np.exp(-dRobotTarget / 5)
+        return 2 * np.exp(-dRobotTarget / 1.5)
 
     # def calcLowLevelTargetScore(self):
     #     vTargetHL = self.targetHighLevel
@@ -406,6 +404,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
             jointTargetObs.append(jointsRelRef[self.joint_map[jMap]])
             jointTargetObs.append(jointsVelRef[self.joint_map[jMap]])
         jointTargetObs = np.array(jointTargetObs)
+        # print("Delta sudut: {}".format(np.arctan2(self.cur_obs[1], self.cur_obs[2]) - np.arctan2(self.targetHighLevel[1], self.targetHighLevel[0]))) 
 
         return np.hstack((self.cur_obs, jointTargetObs))
 
@@ -426,31 +425,40 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         robotPos[2] = 0
 
-        if(distToTarget <= 2):
-            randomX = self.rng.integers(-10, 10)
-            randomY = self.rng.integers(-10, 10)
+        if(distToTarget <= 1):
+            randomRad = np.deg2rad(self.rng.integers(-180, 180))
+            randomX = np.cos(randomRad) * 5
+            randomY = np.sin(randomRad) * 5
             self.target = robotPos + np.array([randomX, randomY, 0])
 
     def high_level_step(self, action):
+        vRobot = self.flat_env.parts["torso"].get_position()
+        vRobot[2] = 0
+
         # Map sudut agar berada di sekitar -7.5 s/d 7.5 derajat
         actionDegree = np.rad2deg(np.arctan2(action[1], action[0]))
         _, _, yaw = self.flat_env.robot.robot_body.pose().rpy()
         newDegree = np.interp(actionDegree, [-180, 180], [-7.5, 7.5]) + np.rad2deg(yaw)
         cosTarget, sinTarget = np.cos(np.deg2rad(newDegree)), np.sin(np.deg2rad(newDegree))
-        self.targetHighLevel = np.array([cosTarget, sinTarget, 0]) * self.targetHighLevelLen
-        # print('===', np.rad2deg(np.arctan2(action[1], action[0])), np.rad2deg(np.arctan2(sinTarget, cosTarget)), actionDegree, newDegree)
+        # self.targetHighLevel = np.array([cosTarget, sinTarget, 0]) * self.targetHighLevelLen
+
+        ## Untuk testing
+        self.targetHighLevel = self.target - vRobot
+        self.targetHighLevel = self.targetHighLevel / np.linalg.norm(self.targetHighLevel) * self.targetHighLevelLen
+        ###################
+        
+        # print('===', np.rad2deg(np.arctan2(action[1], action[0])), np.rad2deg(np.arctan2(sinTarget, cosTarget)), actionDegree, newDegree - np.rad2deg(yaw))
         self.flat_env.walk_target_x = self.targetHighLevel[0] * 50
         self.flat_env.walk_target_y = self.targetHighLevel[1] * 50
 
-        vRobot = self.flat_env.parts["torso"].get_position()
         self.starting_ep_pos = np.array([vRobot[0], vRobot[1], 0])
         
-        self.selected_motion = int(np.interp(action[2], [-1, 1], [0, len(self.motion_list) - 1]))
-        self.selected_motion_frame = int(np.interp(action[3], [-1, 1], [0, self.max_frame[self.selected_motion] - 1]))
+        # self.selected_motion = int(np.interp(action[2], [-1, 1], [0, len(self.motion_list) - 1]))
+        # self.selected_motion_frame = int(np.interp(action[3], [-1, 1], [0, self.max_frame[self.selected_motion] - 1]))
         # print("Mot, frame: ", self.selected_motion, self.selected_motion_frame)
         
-        # self.steps_remaining_at_level = self.step_per_level
-        self.steps_remaining_at_level = self.max_frame[self.selected_motion] - 1
+        self.steps_remaining_at_level = self.step_per_level
+        # self.steps_remaining_at_level = self.max_frame[self.selected_motion] - 1
         self.num_high_level_steps += 1
         # self.low_level_agent_id = "low_level_{}".format(self.num_high_level_steps)
 
@@ -482,7 +490,8 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
             self.deltaVelJoints,
             self.deltaEndPoints
         ]
-        rewardWeight = [0.3, 0.25, 0.25, 1]
+        # rewardWeight = [0.3, 0.25, 0.25, 1]
+        rewardWeight = [1, 0.25, 0.25, 0.1]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):
@@ -495,15 +504,16 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         rew, obs = dict(), dict()
         # Handle env termination & transitions back to higher level
         done = {"__all__": False}
-        if f_done:
+        self.cur_timestep += 1
+        if f_done or (self.cur_timestep >= self.max_timestep):
             done["__all__"] = True
-            rew["high_level_agent"] = self.highTargetScore + 0.2 * np.exp(-self.steps_remaining_at_level / self.step_per_level) + self.baseReward * 0.1
+            rew["high_level_agent"] = self.highTargetScore + 0.5 * np.exp(-self.steps_remaining_at_level / 10) + self.baseReward * 0
             obs["high_level_agent"] = self.getHighLevelObs()
             obs[self.low_level_agent_id] = self.getLowLevelObs()
             rew[self.low_level_agent_id] = totalReward
         elif self.steps_remaining_at_level <= 0:
             # done[self.low_level_agent_id] = True
-            rew["high_level_agent"] = self.highTargetScore + 0.2 + self.baseReward * 0.1
+            rew["high_level_agent"] = self.highTargetScore + 0.5 + self.baseReward * 0
             obs["high_level_agent"] = self.getHighLevelObs()
         else:
             obs = {self.low_level_agent_id: self.getLowLevelObs()}

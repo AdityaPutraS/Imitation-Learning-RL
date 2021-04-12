@@ -9,7 +9,7 @@ from ray.tune.registry import register_env
 
 
 def drawLine(c1, c2, color):
-    return pybullet.addUserDebugLine(c1, c2, lineColorRGB=color, lineWidth=5)
+    return pybullet.addUserDebugLine(c1, c2, lineColorRGB=color, lineWidth=5, lifeTime=0.1)
 
 
 def drawAxis():
@@ -90,16 +90,32 @@ if __name__ == "__main__":
         done = False
         env.render()
         observation = env.reset()
+        sinObs, cosObs = observation[1], observation[2]
+        degObs = np.rad2deg(np.arctan2(sinObs, cosObs))
+        print("Deg obs: ", degObs)
+        # print(env.target, env.targetHighLevel)
         pybullet.removeAllUserDebugItems()
         drawAxis()
         while not done and not doneAll:
             action = agent.compute_action(observation)
             observation, reward, done, info = env.step(action)
+            
+            # Garis dari origin ke target akhir yang harus dicapai robot
+            drawLine([0, 0, 0], env.target, [0, 1, 0])
+            
+            walkTargetEnv = np.array([env.flat_env.walk_target_x, env.flat_env.walk_target_y, 0])
+            robotPos = np.array(env.flat_env.robot.body_xyz)
+            robotPos[2] = 0
+            # Garis dari origin ke robot
+            drawLine([0, 0, 0], robotPos, [1, 1, 1])
+
+            # Garis dari robot ke walk target environment
+            drawLine(robotPos, walkTargetEnv, [0, 0, 0])
+
             # print(observation)
             # drawText(str(env.frame), env.flat_env.parts["lwaist"].get_position() + np.array([0, 0, 1]), [0, 1, 0], 1.0/30)
             # drawText(str(env.deltaJoints), env.flat_env.parts["lwaist"].get_position() + np.array([1, 0, 1]), [1, 0, 0], 1.0/30)
             # drawText(str(env.deltaEndPoints), env.flat_env.parts["lwaist"].get_position() + np.array([-1, 0, 1]), [0, 0, 1], 1.0/30)
-            # TODO: visualisasikan frame yang sebenarnya
 
             time.sleep(1.0 / fps)
 
@@ -109,5 +125,6 @@ if __name__ == "__main__":
                 doneAll = True
             elif rKey in keys and keys[rKey] & pybullet.KEY_WAS_TRIGGERED:
                 done = True
+        print("Survived {} steps".format(env.cur_timestep))
     env.close()
     ray.shutdown()

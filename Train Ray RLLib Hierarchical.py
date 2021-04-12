@@ -102,8 +102,8 @@ config = {
 }
 
 experiment_name = "HWalk_Hier_Mimic"
-experiment_id = "PPO_HumanoidBulletEnvHier-v0_02a53_00000_0_2021-04-10_06-57-50"
-checkpoint_num = "550"
+experiment_id = "PPO_HumanoidBulletEnvHier-v0_66b0b_00000_0_2021-04-11_16-39-16"
+checkpoint_num = "940"
 
 resume = True
 

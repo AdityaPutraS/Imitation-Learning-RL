@@ -48,7 +48,8 @@ class RewardLogCallback(DefaultCallbacks):
         episode.user_data["delta_joints_velocity"].append(djv)
         episode.user_data["alive_reward"].append(ar)
 
-        robotDist = np.linalg.norm(base_env.get_unwrapped()[0].starting_ep_pos)
+        # robotDist = np.linalg.norm(base_env.get_unwrapped()[0].starting_ep_pos)
+        robotDist = np.linalg.norm(base_env.get_unwrapped()[0].robot_pos)
         episode.user_data["dist_from_origin"].append(robotDist)
         
     def on_episode_end(self, *, worker: RolloutWorker, base_env: BaseEnv,
