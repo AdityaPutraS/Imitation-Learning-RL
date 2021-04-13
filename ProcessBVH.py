@@ -202,11 +202,12 @@ if __name__ == "__main__":
             basePos = _getJointPos(bvh_pos, "Hips", i, JOINT_MULTIPLIER)
             tmp = []
             for ep in ENDPOINT_LIST:
-                epPos = getJointPos(bvh_pos, ep, i)
-                tmp = np.hstack((tmp, epPos))
                 if USE_NORMALIZED_DF:
                     epPos = _getJointPos(bvh_pos, ep, i, JOINT_MULTIPLIER)
                     tmp = np.hstack((tmp, epPos - basePos))
+                else:
+                    epPos = getJointPos(bvh_pos, ep, i)
+                    tmp = np.hstack((tmp, epPos))
             normalized_data = np.vstack((normalized_data, tmp))
         normalized_data = normalized_data[1:]
         norm_df = pd.DataFrame(
