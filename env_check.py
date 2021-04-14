@@ -71,8 +71,8 @@ if __name__ == "__main__":
 
     agent = PPOTrainer(config_low)
     experiment_name = "HWalk_Low_Mimic"
-    experiment_id = "PPO_HumanoidBulletEnvLow-v0_66c68_00000_0_2021-04-13_19-57-20"
-    checkpoint_num = "330"
+    experiment_id = "PPO_HumanoidBulletEnvLow-v0_1bb4c_00000_0_2021-04-14_02-21-47"
+    checkpoint_num = "1980"
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name, experiment_id, checkpoint_num, checkpoint_num
@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
     env = LowLevelHumanoidEnv()
 
-    fps = 60.0
+    fps = 120.0
     qKey = ord("q")
     rKey = ord("r")
 
@@ -94,14 +94,13 @@ if __name__ == "__main__":
         degObs = np.rad2deg(np.arctan2(sinObs, cosObs))
         print("Deg obs: ", degObs)
         # print(env.target, env.targetHighLevel)
-        pybullet.removeAllUserDebugItems()
         drawAxis()
         while not done and not doneAll:
             action = agent.compute_action(observation)
             observation, reward, done, info = env.step(action)
             
             # Garis dari origin ke target akhir yang harus dicapai robot
-            drawLine([0, 0, 0], env.target, [0, 1, 0])
+            # drawLine([0, 0, 0], env.target, [0, 1, 0])
             
             robotPos = np.array(env.flat_env.robot.body_xyz)
             robotPos[2] = 0
@@ -109,11 +108,11 @@ if __name__ == "__main__":
             # drawLine([0, 0, 0], robotPos, [1, 1, 1])
 
             # Garis dari robot ke walk target environment
-            drawLine(robotPos, robotPos + env.targetHighLevel, [0, 0, 0])
+            # drawLine(robotPos, robotPos + env.targetHighLevel, [0, 0, 0])
 
-            drawLine(env.starting_ep_pos + np.array([0, 0, 1]), robotPos + env.targetHighLevel, [0, 0, 1])
+            # drawLine(env.starting_ep_pos + np.array([0, 0, 1]), robotPos + env.targetHighLevel, [0, 0, 1])
 
-            drawLine(robotPos, [env.flat_env.robot.walk_target_x, env.flat_env.robot.walk_target_y, 0], [0, 0, 1])
+            # drawLine(robotPos, [env.flat_env.robot.walk_target_x, env.flat_env.robot.walk_target_y, 0], [0, 0, 1])
             # print(observation)
             # drawText(str(env.frame), env.flat_env.parts["lwaist"].get_position() + np.array([0, 0, 1]), [0, 1, 0], 1.0/30)
             # drawText(str(env.deltaJoints), env.flat_env.parts["lwaist"].get_position() + np.array([1, 0, 1]), [1, 0, 0], 1.0/30)
@@ -128,5 +127,6 @@ if __name__ == "__main__":
             elif rKey in keys and keys[rKey] & pybullet.KEY_WAS_TRIGGERED:
                 done = True
         print("Survived {} steps".format(env.cur_timestep))
+        pybullet.removeAllUserDebugItems()
     env.close()
     ray.shutdown()
