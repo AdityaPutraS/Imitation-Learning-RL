@@ -71,8 +71,8 @@ if __name__ == "__main__":
 
     agent = PPOTrainer(config_low)
     experiment_name = "HWalk_Low_Mimic"
-    experiment_id = "PPO_HumanoidBulletEnvLow-v0_1bb4c_00000_0_2021-04-14_02-21-47"
-    checkpoint_num = "1980"
+    experiment_id = "PPO_HumanoidBulletEnvLow-v0_94516_00000_0_2021-04-14_16-44-09"
+    checkpoint_num = "2250"
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name, experiment_id, checkpoint_num, checkpoint_num
@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
     env = LowLevelHumanoidEnv()
 
-    fps = 120.0
+    fps = 60.0
     qKey = ord("q")
     rKey = ord("r")
 
@@ -98,7 +98,7 @@ if __name__ == "__main__":
         while not done and not doneAll:
             action = agent.compute_action(observation)
             observation, reward, done, info = env.step(action)
-            
+            # print(env.lowTargetScore)
             # Garis dari origin ke target akhir yang harus dicapai robot
             # drawLine([0, 0, 0], env.target, [0, 1, 0])
             

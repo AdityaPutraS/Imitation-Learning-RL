@@ -41,7 +41,7 @@ class LowLevelHumanoidEnv(gym.Env):
         self.observation_space = Box(low=-np.inf, high=np.inf, shape=[44 + 8 * 2])
         self.action_space = self.flat_env.action_space
 
-        reference_name = "motion08_03"
+        reference_name = "motion09_03"
 
         self.joints_df = pd.read_csv(
             "Processed Relative Joints CSV/{}JointPosRad.csv".format(reference_name)
@@ -128,8 +128,6 @@ class LowLevelHumanoidEnv(gym.Env):
 
         self.starting_ep_pos = np.array([0, 0, 0])
         self.robot_pos = np.array([0, 0, 0])
-        self.dist = 0
-        self.dist_weight = 0.5
 
     def initReward(self):
         self.deltaJoints = 0
@@ -137,6 +135,7 @@ class LowLevelHumanoidEnv(gym.Env):
         self.deltaEndPoints = 0
         self.baseReward = 0
         self.lowTargetScore = 0
+        self.last_lowTargetScore = 0
         self.highTargetScore = 0
         self.aliveReward = 0
 
@@ -204,7 +203,6 @@ class LowLevelHumanoidEnv(gym.Env):
 
         self.target = self.getRandomVec(self.targetLen, 0)
         # self.target = np.array([4, 0, 0])
-        self.dist = self.targetLen * self.dist_weight
 
         self.frame = startFrame
         self.setJointsOrientation(self.frame)
@@ -248,6 +246,10 @@ class LowLevelHumanoidEnv(gym.Env):
             jointTargetObs.append(jointsVelRef[self.joint_map[jMap]])
         jointTargetObs = np.array(jointTargetObs)
 
+        targetInfo = self.cur_obs[1:3]
+        jointInfo = self.cur_obs[8:8+17*2]
+
+        # return np.hstack((targetInfo, jointInfo, jointTargetObs))
         return np.hstack((self.cur_obs, jointTargetObs))
 
     def step(self, action):
@@ -328,8 +330,7 @@ class LowLevelHumanoidEnv(gym.Env):
     def calcLowLevelTargetScore(self):
         # Hitung jarak
         distRobotTargetHL = np.linalg.norm(self.target - self.robot_pos)
-        self.dist = self.dist - (distRobotTargetHL * self.dist_weight)
-        return self.dist
+        return 2 * np.exp(-1 * distRobotTargetHL / 2) + self.last_lowTargetScore
 
     def checkTarget(self):
         distToTarget = np.linalg.norm(self.robot_pos - self.target)
@@ -341,6 +342,7 @@ class LowLevelHumanoidEnv(gym.Env):
             randomY = np.sin(randomRad) * self.targetLen
             self.target = self.robot_pos + np.array([randomX, randomY, 0])
             self.starting_ep_pos = self.robot_pos.copy()
+            self.last_lowTargetScore = self.lowTargetScore
             drawLine(self.robot_pos, self.target, [1, 0, 0], lifeTime=0)
         
         self.reassignWalkTarget()
@@ -375,7 +377,7 @@ class LowLevelHumanoidEnv(gym.Env):
             self.deltaEndPoints,
             self.lowTargetScore
         ]
-        rewardWeight = [0, 0.25, 0.25, 0.25, 1]
+        rewardWeight = [1, 0.25, 0.25, 0.25, 0.1]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):
