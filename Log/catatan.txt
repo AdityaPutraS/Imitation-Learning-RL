@@ -131,7 +131,8 @@ PPO_HumanoidBulletEnvLow-v0_9228e_00000_0_2021-04-02_19-28-39:
 		lr 0.0001 => 0.0005
 		
 	hasil: Skip
-	
+
+
 ===================================================
 Tambah score joint velocity
 ==================================================
@@ -214,6 +215,8 @@ PPO_HumanoidBulletEnvLow-v0_70421_00000_0_2021-04-06_20-05-54:
 		
 	hasil: jalan hanya 2 langkah saja
 	
+=================================================================+BATAS HAPUS+============================================================================
+	
 PPO_HumanoidBulletEnvLow-v0_84a7a_00000_0_2021-04-12_17-43-21:
 	update:
 		max frame jadi len(joint df)
@@ -278,10 +281,27 @@ PPO_HumanoidBulletEnvLow-v0_94516_00000_0_2021-04-14_16-44-09:
 		
 	hasil: bisa jalan, mengejar target, gerakan cepat, tapi tidak terlihat seperti berlari
 
-:
+PPO_HumanoidBulletEnvLow-v0_3bd42_00000_0_2021-04-15_21-48-18:
+	note:	
+		Ini merupakan restore train dari PPO_HumanoidBulletEnvLow-v0_94516_00000_0_2021-04-14_16-44-09
 	update:
 		low target score ada tambahan self.target_reassigned_cnt, idenya jika robot mencapai target, nilai low target score tidak reset lagi ke 0, tapi lanjut dari sebelumnya
+		reset yaw diaktifkan, yaw direset random -180 s/d 180
+		saat target ganti, target mungkin -180 s/d 180 derajat , bukan -90 s/d 90 lagi
 	global update:
-		minibatch size 12000 -> 3000
-		train batch size 36000 -> 9000
-	hasil:
+		vf clip param 10 => 50, gunanya untuk mengscale reward, di implementasinya, batas atasnya jika reward/vf_clip_param >= 200 maka akan lama konvergennya
+	hasil: aneh, kadang jalan, kadang jatuh
+	
+:
+	note:	
+
+	update:
+		menambah teknik frame update cnt, frame akan diupdate jika frame update cnt % 2 == 0, gunanya untuk memperlambat gerak referensi
+		reset yaw diaktifkan dengan randomnya -180 s/d 180
+		walk target di batasi maksimal sudutnya (+- 45 derajat), jika walk target melebihi itu, maka walk target akan di assign +- 45 derajat
+		garis target digambar dari target ke target, bukan dari robot ke target lagi saat target berganti
+		menambah debug robot pos line yang menggambar jalur robot pada setiap saat
+		motion 09_03 => 08_03
+	global update:
+		vf clip param 50 => 20
+	hasil: 

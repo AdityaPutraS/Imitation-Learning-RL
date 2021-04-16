@@ -27,7 +27,7 @@ def make_env(env_config):
     return LowLevelHumanoidEnv()
 
 register_env(ENV_NAME, make_env)
-TARGET_REWARD = 5000
+TARGET_REWARD = 10000
 
 
 def policy_mapping_fn(agent_id):
@@ -49,8 +49,9 @@ config = {
     "kl_coeff": 1.0,
     "num_sgd_iter": 20,
     "lr": 0.0005,
-    "sgd_minibatch_size": 3000,
-    "train_batch_size": 9000,
+    "vf_clip_param": 20,
+    "sgd_minibatch_size": 12000,
+    "train_batch_size": 36000,
     "model": {
         "fcnet_hiddens": [1024, 512],
         "fcnet_activation": "tanh",
@@ -61,10 +62,19 @@ config = {
     "framework": "tf",
 }
 
+experiment_name = "HWalk_Low_Mimic"
+experiment_id = "PPO_HumanoidBulletEnvLow-v0_94516_00000_0_2021-04-14_16-44-09"
+checkpoint_num = "2250"
+
+resume = False
+
 tune.run(
     PPOTrainer,
     name="HWalk_Low_Mimic",
-    resume=False,
+    # resume=resume,
+    restore="/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
+        experiment_name, experiment_id, checkpoint_num, checkpoint_num
+    ) if resume else "",
     checkpoint_at_end=True,
     checkpoint_freq=10,
     checkpoint_score_attr="episode_reward_mean",

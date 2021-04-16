@@ -41,7 +41,7 @@ class LowLevelHumanoidEnv(gym.Env):
         self.observation_space = Box(low=-np.inf, high=np.inf, shape=[44 + 8 * 2])
         self.action_space = self.flat_env.action_space
 
-        reference_name = "motion09_03"
+        reference_name = "motion08_03"
 
         self.joints_df = pd.read_csv(
             "Processed Relative Joints CSV/{}JointPosRad.csv".format(reference_name)
@@ -129,6 +129,10 @@ class LowLevelHumanoidEnv(gym.Env):
         self.starting_ep_pos = np.array([0, 0, 0])
         self.robot_pos = np.array([0, 0, 0])
 
+        self.frame_update_cnt = 0
+
+        self.last_robotPos = np.array([0, 0, 0])
+
     def initReward(self):
         self.deltaJoints = 0
         self.deltaVelJoints = 0
@@ -166,14 +170,17 @@ class LowLevelHumanoidEnv(gym.Env):
         self.flat_env.jdict["left_hip_z"].set_state(jointsRef["leftHipZ"], jointsVelRef["leftHipZ"])
 
     def incFrame(self, inc):
-        self.frame = (self.frame + inc) % (self.max_frame - 1)
+        self.frame_update_cnt = (self.frame_update_cnt + 1) % 2
+        if(self.frame_update_cnt == 0):
+            self.frame = (self.frame + inc) % (self.max_frame - 1)
+        
         if(self.frame == 0):
             self.starting_ep_pos = self.robot_pos.copy()
 
     def reset(self):
         # Insialisasi dengan posisi awal random sesuai referensi
         # return self.resetWithYaw(self.rng.integers(-10, 10))
-        return self.resetFromFrame(startFrame=self.rng.integers(0, self.max_frame-5))
+        return self.resetFromFrame(startFrame=self.rng.integers(0, self.max_frame-5), resetYaw=self.rng.integers(-180, 180))
 
     def setWalkTarget(self, x, y):
         self.flat_env.walk_target_x = x
@@ -183,8 +190,17 @@ class LowLevelHumanoidEnv(gym.Env):
 
     def reassignWalkTarget(self):
         vTargetRobot = self.target - self.robot_pos
-        self.targetHighLevel = vTargetRobot
+        degTargetRobot = np.arctan2(vTargetRobot[1], vTargetRobot[0])
         lenTargetRobot = np.linalg.norm(vTargetRobot)
+        _, _, yaw = self.flat_env.robot.robot_body.pose().rpy()
+        degLimit = np.deg2rad(45)
+        if (degTargetRobot - yaw > degLimit):
+            vTargetRobot = np.array([np.cos(degLimit + yaw), np.sin(degLimit + yaw), 0]) * lenTargetRobot
+        elif (degTargetRobot - yaw < -degLimit):
+            vTargetRobot = np.array([np.cos(-degLimit + yaw), np.sin(-degLimit + yaw), 0]) * lenTargetRobot
+        
+        self.targetHighLevel = vTargetRobot
+        
         vTargetRobot = vTargetRobot / lenTargetRobot
         walkTarget = self.robot_pos + vTargetRobot * (self.targetHighLevelLen - (self.targetLen - lenTargetRobot))
         self.setWalkTarget(walkTarget[0], walkTarget[1])
@@ -211,16 +227,18 @@ class LowLevelHumanoidEnv(gym.Env):
         # robotPos = self.getRandomVec(3, 1.15)
         robotPos = np.array([0, 0, 1.15])
         self.robot_pos = np.array([robotPos[0], robotPos[1], 0])
+        self.last_robotPos  = self.robot_pos.copy()
         self.reassignWalkTarget()
         self.flat_env.robot.robot_body.reset_position(robotPos)
         
         degToTarget = np.rad2deg(np.arctan2(self.targetHighLevel[1], self.targetHighLevel[0]))
-        rotDeg = R.from_euler("z", degToTarget, degrees=True)
-        self.flat_env.robot.robot_body.reset_orientation(rotDeg.as_quat())
+        robotRot = R.from_euler("z", degToTarget + resetYaw, degrees=True)
+        self.flat_env.robot.robot_body.reset_orientation(robotRot.as_quat())
 
         # Gunakan kaki kanan sebagai acuan
         rightFootPosActual = self.flat_env.parts["right_foot"].get_position()
         rightFootPosActual[2] = 0
+        rotDeg = R.from_euler("z", degToTarget, degrees=True)
         rightFootPosRef = rotDeg.apply(getJointPos(self.end_point_df.iloc[self.frame], self.end_point_map["right_foot"]))
         rightFootPosRef[2] = 0
         
@@ -230,8 +248,9 @@ class LowLevelHumanoidEnv(gym.Env):
 
         self.initReward()
 
-        drawLine(self.robot_pos, self.target, [1, 0, 0], lifeTime=0)
+        # drawLine(self.robot_pos, self.target, [1, 0, 0], lifeTime=0)
 
+        self.frame_update_cnt = 0
         self.incFrame(self.skipFrame)
         
         self.cur_obs = self.flat_env.robot.calc_state()
@@ -337,15 +356,21 @@ class LowLevelHumanoidEnv(gym.Env):
 
         if(distToTarget <= 1):
             _, _, yaw = self.flat_env.robot.robot_body.pose().rpy()
-            randomRad = yaw + np.deg2rad(self.rng.integers(-90, 90))
+            randomRad = yaw + np.deg2rad(self.rng.integers(-180, 180))
             randomX = np.cos(randomRad) * self.targetLen
             randomY = np.sin(randomRad) * self.targetLen
-            self.target = self.robot_pos + np.array([randomX, randomY, 0])
+            newTarget = self.robot_pos + np.array([randomX, randomY, 0])
+            # drawLine(self.target, newTarget, [1, 0, 0], lifeTime=0)
+            self.target = newTarget
             self.starting_ep_pos = self.robot_pos.copy()
             self.last_lowTargetScore = self.lowTargetScore
-            drawLine(self.robot_pos, self.target, [1, 0, 0], lifeTime=0)
         
         self.reassignWalkTarget()
+
+    def drawDebugRobotPosLine(self):
+        if(self.cur_timestep % 10 == 0):
+            drawLine(self.last_robotPos, self.robot_pos, [1, 1, 1], lifeTime=0)
+            self.last_robotPos = self.robot_pos.copy()
             
         
     def low_level_step(self, action):
@@ -386,6 +411,8 @@ class LowLevelHumanoidEnv(gym.Env):
         self.incFrame(self.skipFrame)
 
         self.checkTarget()
+
+        # self.drawDebugRobotPosLine()
 
         obs = self.getLowLevelObs()
 

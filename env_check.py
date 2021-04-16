@@ -108,7 +108,7 @@ if __name__ == "__main__":
             # drawLine([0, 0, 0], robotPos, [1, 1, 1])
 
             # Garis dari robot ke walk target environment
-            # drawLine(robotPos, robotPos + env.targetHighLevel, [0, 0, 0])
+            drawLine(robotPos, robotPos + env.targetHighLevel, [0, 0, 0])
 
             # drawLine(env.starting_ep_pos + np.array([0, 0, 1]), robotPos + env.targetHighLevel, [0, 0, 1])
 
