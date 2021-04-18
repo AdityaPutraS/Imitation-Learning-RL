@@ -63,8 +63,8 @@ config = {
 }
 
 experiment_name = "HWalk_Low_Mimic"
-experiment_id = "PPO_HumanoidBulletEnvLow-v0_88ad4_00000_0_2021-04-17_17-23-13"
-checkpoint_num = "2270"
+experiment_id = "PPO_HumanoidBulletEnvLow-v0_f8215_00000_0_2021-04-18_16-56-31"
+checkpoint_num = "930"
 
 resume = False
 

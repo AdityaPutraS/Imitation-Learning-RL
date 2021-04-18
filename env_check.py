@@ -71,8 +71,8 @@ if __name__ == "__main__":
 
     agent = PPOTrainer(config_low)
     experiment_name = "HWalk_Low_Mimic"
-    experiment_id = "PPO_HumanoidBulletEnvLow-v0_88ad4_00000_0_2021-04-17_17-23-13"
-    checkpoint_num = "2270"
+    experiment_id = "PPO_HumanoidBulletEnvLow-v0_f8215_00000_0_2021-04-18_16-56-31"
+    checkpoint_num = "930"
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name, experiment_id, checkpoint_num, checkpoint_num
@@ -90,6 +90,7 @@ if __name__ == "__main__":
         done = False
         env.render()
         observation = env.reset()
+        print("Start from frame: ", env.frame)
         sinObs, cosObs = observation[1], observation[2]
         degObs = np.rad2deg(np.arctan2(sinObs, cosObs))
         print("Deg obs: ", degObs)

@@ -250,10 +250,14 @@ class LowLevelHumanoidEnv(gym.Env):
         rotDeg = R.from_euler("z", degToTarget, degrees=True)
         rightFootPosRef = rotDeg.apply(getJointPos(self.end_point_df.iloc[self.frame], self.end_point_map["right_foot"]))
         rightFootPosRef[2] = 0
-        
         # Pilih hips pos agar starting_ep_pos + rightFootPosRef == rightFootPosActual
         # starting_ep_pos = rightFootPosActual - rightFootPosRef
         self.starting_ep_pos = rightFootPosActual - rightFootPosRef
+        
+        rightLegPosRef = rotDeg.apply(getJointPos(self.end_point_df.iloc[self.frame], "RightLeg"))
+        rightLegPosRefNext = rotDeg.apply(getJointPos(self.end_point_df.iloc[self.frame + 1], "RightLeg"))
+        startingVelocity = (rightLegPosRefNext - rightLegPosRef) / 0.0165
+        self.flat_env.robot.robot_body.reset_velocity(linearVelocity=startingVelocity)
 
         self.initReward()
 
@@ -356,7 +360,7 @@ class LowLevelHumanoidEnv(gym.Env):
         # Didapat dari perhitungan reward alive env humanoid
         z = self.cur_obs[0] + self.flat_env.robot.initial_z
         # return +2 if z > 0.78 else -1
-        return +2 if z > 0.6 else -1
+        return +2 if z > 0.5 else -1
 
     def calcElectricityCost(self, action):
         runningCost = -1.0 * float(np.abs(action * self.flat_env.robot.joint_speeds).mean())
@@ -391,7 +395,7 @@ class LowLevelHumanoidEnv(gym.Env):
             drawLine(self.last_robotPos, self.robot_pos, [1, 1, 1], lifeTime=0)
             self.last_robotPos = self.robot_pos.copy()
     
-    def updateReward(self, base_reward, action):
+    def updateReward(self, action):
         jointScore = self.calcJointScore()
         jointVelScore = self.calcJointVelScore()
         endPointScore = self.calcEndPointScore()
@@ -406,14 +410,18 @@ class LowLevelHumanoidEnv(gym.Env):
         self.deltaVelJoints = jointVelScore
         self.deltaEndPoints = endPointScore
         self.lowTargetScore = lowTargetScore
-        self.baseReward = base_reward
+        # self.baseReward = base_reward
         self.electricityScore = self.calcElectricityCost(action)
         self.jointLimitScore = self.calcJointLimitCost()
         self.aliveReward = self.calcAliveReward()
         
     def low_level_step(self, action):
         # Step di env yang sebenarnya
-        f_obs, f_rew, f_done, _ = self.flat_env.step(action)
+        # f_obs, f_rew, f_done, _ = self.flat_env.step(action)
+        self.flat_env.robot.apply_action(action)
+        self.flat_env.scene.global_step()
+
+        f_obs = self.flat_env.robot.calc_state()  # also calculates self.joints_at_limit
         
         body_xyz = self.flat_env.robot.body_xyz
         self.robot_pos[0] = body_xyz[0]
@@ -422,13 +430,14 @@ class LowLevelHumanoidEnv(gym.Env):
 
         self.cur_obs = f_obs
 
-        self.updateReward(base_reward=f_rew, action=action)
+        self.updateReward(action=action)
 
         reward = [
             self.baseReward,
             self.delta_deltaJoints,
             self.delta_deltaVelJoints,
-            self.delta_deltaEndPoints,
+            # self.delta_deltaEndPoints,
+            self.deltaEndPoints,
             self.delta_lowTargetScore,
             self.electricityScore,
             self.jointLimitScore,
@@ -449,7 +458,7 @@ class LowLevelHumanoidEnv(gym.Env):
 
         obs = self.getLowLevelObs()
 
-        done = f_done
+        done = self.aliveReward < 0
         self.cur_timestep += 1
         if self.cur_timestep >= self.max_timestep:
             done = True
