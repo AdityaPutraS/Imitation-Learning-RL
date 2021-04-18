@@ -49,7 +49,7 @@ config = {
     "kl_coeff": 1.0,
     "num_sgd_iter": 20,
     "lr": 0.0005,
-    "vf_clip_param": 20,
+    "vf_clip_param": 10,
     "sgd_minibatch_size": 12000,
     "train_batch_size": 36000,
     "model": {
@@ -63,8 +63,8 @@ config = {
 }
 
 experiment_name = "HWalk_Low_Mimic"
-experiment_id = "PPO_HumanoidBulletEnvLow-v0_94516_00000_0_2021-04-14_16-44-09"
-checkpoint_num = "2250"
+experiment_id = "PPO_HumanoidBulletEnvLow-v0_88ad4_00000_0_2021-04-17_17-23-13"
+checkpoint_num = "2270"
 
 resume = False
 

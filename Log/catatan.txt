@@ -292,16 +292,74 @@ PPO_HumanoidBulletEnvLow-v0_3bd42_00000_0_2021-04-15_21-48-18:
 		vf clip param 10 => 50, gunanya untuk mengscale reward, di implementasinya, batas atasnya jika reward/vf_clip_param >= 200 maka akan lama konvergennya
 	hasil: aneh, kadang jalan, kadang jatuh
 	
-:
+PPO_HumanoidBulletEnvLow-v0_84e4e_00000_0_2021-04-17_10-42-15
+PPO_HumanoidBulletEnvLow-v0_a824e_00000_0_2021-04-17_13-42-11:
 	note:	
-
+		train 2 kali, 1 dengan reset yaw 0, random target +-45
+		eksperimen 2 kali, 1 dengan skipframe naik jadi 2, 1 dengan frame update cnt
 	update:
-		menambah teknik frame update cnt, frame akan diupdate jika frame update cnt % 2 == 0, gunanya untuk memperlambat gerak referensi
-		reset yaw diaktifkan dengan randomnya -180 s/d 180
 		walk target di batasi maksimal sudutnya (+- 45 derajat), jika walk target melebihi itu, maka walk target akan di assign +- 45 derajat
 		garis target digambar dari target ke target, bukan dari robot ke target lagi saat target berganti
 		menambah debug robot pos line yang menggambar jalur robot pada setiap saat
-		motion 09_03 => 08_03
 	global update:
-		vf clip param 50 => 20
+		vf clip param 50 => 10 (kembali ke default)
+	hasil: 
+		eksperimen 1: skip frame = 2
+			dengan reset yaw 0: PPO_HumanoidBulletEnvLow-v0_84e4e_00000_0_2021-04-17_10-42-15
+				Jalan dengan 1 kaki saja yang maju ke depan
+			
+			dengan random reset dan target: PPO_HumanoidBulletEnvLow-v0_a824e_00000_0_2021-04-17_13-42-11
+				Masih jalan dengan kaki, bisa belok dan mengejar target
+		eksperimen 2: dengan frame update cnt
+		TERMINATED, lanjut ke ide eksperimen selanjutnya
+			dengan reset yaw 0:
+			
+			dengan random reset dan target:
+			
+=============================
+Next idea:
+	Daripada menggunakan delta endpoint, joint, velocity, sebaiknya reward menjadi delta dari delta endpoint, joint, velocity. Konsepnya sama seperti potential pada flat env dimana reward diberikan dari delta(delta kedekatan robot dengan target), bukan delta kedekatan robot dengan target saja. Dengan hal tersebut, jika robot tidak mengimprove dirinya, delta dari delta tersebut akan berinlai 0, sementara jika berubah menjadi lebih buruk, akan menjadi negatif. Ini mungkin dapat mengatasi masalah robot fine fine saja dengan reward negatif pada delta endpoint, joint, velocity
+============================
+
+PPO_HumanoidBulletEnvLow-v0_88ad4_00000_0_2021-04-17_17-23-13 (08_03)
+PPO_HumanoidBulletEnvLow-v0_2d14e_00000_0_2021-04-18_11-07-14 (09_03):
+	note:	
+		self.delta_deltaJoints = (jointScore - self.deltaJoints) / 0.0165
+		self.delta_deltaVelJoints = (jointVelScore - self.deltaVelJoints) / 0.0165 * 0.1
+		self.delta_deltaEndPoints = (endPointScore - self.deltaEndPoints) / 0.0165
+		self.delta_lowTargetScore = (lowTargetScore - self.lowTargetScore) / 0.0165
+		rewardWeight = [0.2, 0.1, 0.1, 0.1, 0.2] => 08_03
+		perhitungan reward = -delta/sum weight, tidak menggunakan exp lagi
+		
+		09_03 di train dari 08_03
+	update:
+		reward menjadi delta reward, lihat next idea diatas
+		
+		
+	global update:
+		
+	hasil: bisa jalan, kurang terlihat bisa mengejar target, mungkin harus ditrain dengan random yaw dan target
+	
+	:
+	note:	
+		
+	update:
+		weight base reward = 0
+		tambah electricity reward, joint limit reward
+		kembalikan alive reward
+		weight reward jadinya
+			reward = [
+			    self.baseReward,
+			    self.delta_deltaJoints,
+			    self.delta_deltaVelJoints,
+			    self.delta_deltaEndPoints,
+			    self.delta_lowTargetScore,
+			    self.electricityScore,
+			    self.jointLimitScore,
+			    self.aliveReward,
+			]
+			rewardWeight = [0, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.1]
+		add electricity & joint limit reward di custom callback
+	global update:
+		
 	hasil: 

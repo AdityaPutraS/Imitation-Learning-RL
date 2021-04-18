@@ -71,8 +71,8 @@ if __name__ == "__main__":
 
     agent = PPOTrainer(config_low)
     experiment_name = "HWalk_Low_Mimic"
-    experiment_id = "PPO_HumanoidBulletEnvLow-v0_94516_00000_0_2021-04-14_16-44-09"
-    checkpoint_num = "2250"
+    experiment_id = "PPO_HumanoidBulletEnvLow-v0_88ad4_00000_0_2021-04-17_17-23-13"
+    checkpoint_num = "2270"
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name, experiment_id, checkpoint_num, checkpoint_num

@@ -38,10 +38,10 @@ class LowLevelHumanoidEnv(gym.Env):
         # self.observation_space = Box(
         #     low=-np.inf, high=np.inf, shape=[1 + 5 + 17 * 2 + 2 + 8]
         # )
-        self.observation_space = Box(low=-np.inf, high=np.inf, shape=[44 + 8 * 2])
+        self.observation_space = Box(low=-np.inf, high=np.inf, shape=[42 + 8 * 2]) # Foot contact tidak dimasukan
         self.action_space = self.flat_env.action_space
 
-        reference_name = "motion08_03"
+        reference_name = "motion09_03"
 
         self.joints_df = pd.read_csv(
             "Processed Relative Joints CSV/{}JointPosRad.csv".format(reference_name)
@@ -142,6 +142,13 @@ class LowLevelHumanoidEnv(gym.Env):
         self.last_lowTargetScore = 0
         self.highTargetScore = 0
         self.aliveReward = 0
+        self.electricityScore = 0
+        self.jointLimitScore = 0
+
+        self.delta_deltaJoints = 0
+        self.delta_deltaVelJoints = 0
+        self.delta_deltaEndPoints = 0
+        self.delta_lowTargetScore = 0
 
     def close(self):
         self.flat_env.close()
@@ -170,9 +177,9 @@ class LowLevelHumanoidEnv(gym.Env):
         self.flat_env.jdict["left_hip_z"].set_state(jointsRef["leftHipZ"], jointsVelRef["leftHipZ"])
 
     def incFrame(self, inc):
-        self.frame_update_cnt = (self.frame_update_cnt + 1) % 2
-        if(self.frame_update_cnt == 0):
-            self.frame = (self.frame + inc) % (self.max_frame - 1)
+        # self.frame_update_cnt = (self.frame_update_cnt + 1) % 2
+        # if(self.frame_update_cnt == 0):
+        self.frame = (self.frame + inc) % (self.max_frame - 1)
         
         if(self.frame == 0):
             self.starting_ep_pos = self.robot_pos.copy()
@@ -180,7 +187,8 @@ class LowLevelHumanoidEnv(gym.Env):
     def reset(self):
         # Insialisasi dengan posisi awal random sesuai referensi
         # return self.resetWithYaw(self.rng.integers(-10, 10))
-        return self.resetFromFrame(startFrame=self.rng.integers(0, self.max_frame-5), resetYaw=self.rng.integers(-180, 180))
+        # return self.resetFromFrame(startFrame=self.rng.integers(0, self.max_frame-5), resetYaw=self.rng.integers(-180, 180))
+        return self.resetFromFrame(startFrame=self.rng.integers(0, self.max_frame-5), resetYaw=0)
 
     def setWalkTarget(self, x, y):
         self.flat_env.walk_target_x = x
@@ -205,8 +213,9 @@ class LowLevelHumanoidEnv(gym.Env):
         walkTarget = self.robot_pos + vTargetRobot * (self.targetHighLevelLen - (self.targetLen - lenTargetRobot))
         self.setWalkTarget(walkTarget[0], walkTarget[1])
 
-    def getRandomVec(self, vecLen, z):
-        randomRad = np.deg2rad(self.rng.integers(-180, 180))
+    def getRandomVec(self, vecLen, z, initYaw=0):
+        # randomRad = initYaw + np.deg2rad(self.rng.integers(-180, 180))
+        randomRad = initYaw + np.deg2rad(self.rng.integers(-45, 45))
         randomX = np.cos(randomRad) * vecLen
         randomY = np.sin(randomRad) * vecLen
 
@@ -248,7 +257,7 @@ class LowLevelHumanoidEnv(gym.Env):
 
         self.initReward()
 
-        # drawLine(self.robot_pos, self.target, [1, 0, 0], lifeTime=0)
+        drawLine(self.robot_pos, self.target, [1, 0, 0], lifeTime=0)
 
         self.frame_update_cnt = 0
         self.incFrame(self.skipFrame)
@@ -269,7 +278,7 @@ class LowLevelHumanoidEnv(gym.Env):
         jointInfo = self.cur_obs[8:8+17*2]
 
         # return np.hstack((targetInfo, jointInfo, jointTargetObs))
-        return np.hstack((self.cur_obs, jointTargetObs))
+        return np.hstack((self.cur_obs[:-2], jointTargetObs))
 
     def step(self, action):
         return self.low_level_step(action)
@@ -287,9 +296,10 @@ class LowLevelHumanoidEnv(gym.Env):
                 * self.joint_weight[jMap]
             )
 
-        score = np.exp(-1 * deltaJoints / self.joint_weight_sum)
-        return (score * 3) - 2.3
+        # score = np.exp(-1 * deltaJoints / self.joint_weight_sum)
+        # return (score * 3) - 2.3
         # return deltaJoints / self.joint_weight_sum
+        return -deltaJoints / self.joint_weight_sum
 
     def calcJointVelScore(self):
         deltaVel = 0
@@ -304,8 +314,9 @@ class LowLevelHumanoidEnv(gym.Env):
                 * self.joint_vel_weight[jMap]
             )
 
-        score = np.exp(-1 * deltaVel / self.joint_vel_weight_sum)
-        return (score * 3) - 1.8
+        # score = np.exp(-1 * deltaVel / self.joint_vel_weight_sum)
+        # return (score * 3) - 1.8
+        return -deltaVel / self.joint_vel_weight_sum
 
     def calcEndPointScore(self, debug=False):
         deltaEndPoint = 0
@@ -323,7 +334,7 @@ class LowLevelHumanoidEnv(gym.Env):
             v1 = self.flat_env.parts[epMap].get_position()
             # v2 = base_pos + r.apply(getJointPos(endPointRef, self.end_point_map[epMap]))
             v2 = self.starting_ep_pos + r.apply(getJointPos(endPointRef, self.end_point_map[epMap]))
-            # drawLine(v1, v2, [1, 0, 0])
+            drawLine(v1, v2, [1, 0, 0])
             deltaVec = v2 - v1
             dist = np.linalg.norm(deltaVec)
             if(debug):
@@ -334,8 +345,9 @@ class LowLevelHumanoidEnv(gym.Env):
         if(debug):
             return deltaEndPoint
         else:
-            score = np.exp(-10 * (deltaEndPoint/self.end_point_weight_sum))
-            return 2 * score - 0.5
+            # score = np.exp(-10 * (deltaEndPoint/self.end_point_weight_sum))
+            # return 2 * score - 0.5
+            return -deltaEndPoint / self.end_point_weight_sum
 
     def calcJumpReward(self, obs):
         return 0
@@ -346,21 +358,28 @@ class LowLevelHumanoidEnv(gym.Env):
         # return +2 if z > 0.78 else -1
         return +2 if z > 0.6 else -1
 
+    def calcElectricityCost(self, action):
+        runningCost = -1.0 * float(np.abs(action * self.flat_env.robot.joint_speeds).mean())
+        stallCost = -0.1 * float(np.square(action).mean())
+        return runningCost + stallCost
+
+    def calcJointLimitCost(self):
+        return -0.1 * self.flat_env.robot.joints_at_limit
+
     def calcLowLevelTargetScore(self):
         # Hitung jarak
         distRobotTargetHL = np.linalg.norm(self.target - self.robot_pos)
-        return 2 * np.exp(-1 * distRobotTargetHL / 2) + self.last_lowTargetScore
+        # return 2 * np.exp(-1 * distRobotTargetHL / 2) + self.last_lowTargetScore
+        return -distRobotTargetHL
 
     def checkTarget(self):
         distToTarget = np.linalg.norm(self.robot_pos - self.target)
 
         if(distToTarget <= 1):
             _, _, yaw = self.flat_env.robot.robot_body.pose().rpy()
-            randomRad = yaw + np.deg2rad(self.rng.integers(-180, 180))
-            randomX = np.cos(randomRad) * self.targetLen
-            randomY = np.sin(randomRad) * self.targetLen
-            newTarget = self.robot_pos + np.array([randomX, randomY, 0])
-            # drawLine(self.target, newTarget, [1, 0, 0], lifeTime=0)
+            randomTarget = self.getRandomVec(self.targetLen, 0, initYaw=yaw)
+            newTarget = self.robot_pos + randomTarget
+            drawLine(self.target, newTarget, [1, 0, 0], lifeTime=0)
             self.target = newTarget
             self.starting_ep_pos = self.robot_pos.copy()
             self.last_lowTargetScore = self.lowTargetScore
@@ -371,7 +390,26 @@ class LowLevelHumanoidEnv(gym.Env):
         if(self.cur_timestep % 10 == 0):
             drawLine(self.last_robotPos, self.robot_pos, [1, 1, 1], lifeTime=0)
             self.last_robotPos = self.robot_pos.copy()
-            
+    
+    def updateReward(self, base_reward, action):
+        jointScore = self.calcJointScore()
+        jointVelScore = self.calcJointVelScore()
+        endPointScore = self.calcEndPointScore()
+        lowTargetScore = self.calcLowLevelTargetScore()
+        
+        self.delta_deltaJoints = (jointScore - self.deltaJoints) / 0.0165
+        self.delta_deltaVelJoints = (jointVelScore - self.deltaVelJoints) / 0.0165 * 0.1
+        self.delta_deltaEndPoints = (endPointScore - self.deltaEndPoints) / 0.0165
+        self.delta_lowTargetScore = (lowTargetScore - self.lowTargetScore) / 0.0165 * 0.1
+
+        self.deltaJoints =  jointScore
+        self.deltaVelJoints = jointVelScore
+        self.deltaEndPoints = endPointScore
+        self.lowTargetScore = lowTargetScore
+        self.baseReward = base_reward
+        self.electricityScore = self.calcElectricityCost(action)
+        self.jointLimitScore = self.calcJointLimitCost()
+        self.aliveReward = self.calcAliveReward()
         
     def low_level_step(self, action):
         # Step di env yang sebenarnya
@@ -384,25 +422,20 @@ class LowLevelHumanoidEnv(gym.Env):
 
         self.cur_obs = f_obs
 
-        # Hitung masing masing reward
-        self.deltaJoints = self.calcJointScore()  # Rentang -1 - 1
-        self.deltaVelJoints = self.calcJointVelScore()
-        self.deltaEndPoints = self.calcEndPointScore()  # Rentang -1 - 1
-        # self.deltaEndPoints = 0
-        self.baseReward = f_rew
-        self.lowTargetScore = self.calcLowLevelTargetScore()
-        # self.aliveReward = self.calcAliveReward()
-
-        # jumpReward = self.calcJumpReward(f_obs)  # Untuk task lompat
+        self.updateReward(base_reward=f_rew, action=action)
 
         reward = [
             self.baseReward,
-            self.deltaJoints,
-            self.deltaVelJoints,
-            self.deltaEndPoints,
-            self.lowTargetScore
+            self.delta_deltaJoints,
+            self.delta_deltaVelJoints,
+            self.delta_deltaEndPoints,
+            self.delta_lowTargetScore,
+            self.electricityScore,
+            self.jointLimitScore,
+            self.aliveReward,
         ]
-        rewardWeight = [1, 0.25, 0.25, 0.25, 0.1]
+
+        rewardWeight = [0, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.1]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):
