@@ -58,30 +58,23 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.step_per_level = 10
         self.steps_remaining_at_level = self.step_per_level
         self.num_high_level_steps = 0
-
+        basePath = "~/GitHub/TA/Relative_Joints_CSV"
         self.joints_df = [
-            pd.read_csv("Processed Relative Joints CSV/{}JointPosRad.csv".format(mot))
-            for mot in self.motion_list
+            pd.read_csv("{}/{}JointPosRad.csv".format(basePath, mot)) for mot in self.motion_list
         ]
 
         self.joints_vel_df = [
-            pd.read_csv(
-                "Processed Relative Joints CSV/{}JointSpeedRadSec.csv".format(mot)
-            )
+            pd.read_csv("{}/{}JointSpeedRadSec.csv".format(basePath, mot))
             for mot in self.motion_list
         ]
 
         self.joints_rel_df = [
-            pd.read_csv(
-                "Processed Relative Joints CSV/{}JointPosRadRelative.csv".format(mot)
-            )
+            pd.read_csv("{}/{}JointPosRadRelative.csv".format(basePath, mot))
             for mot in self.motion_list
         ]
 
         self.end_point_df = [
-            pd.read_csv(
-                "Processed Relative Joints CSV/{}JointVecFromHip.csv".format(mot)
-            )
+            pd.read_csv("{}/{}JointVecFromHip.csv".format(basePath, mot))
             for mot in self.motion_list
         ]
 
@@ -147,7 +140,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         self.target = np.array([1, 0, 0])
         self.targetLen = 5
-        self.highLevelDegTarget = 0 # Sudut yang harus dicapai oleh robot (radian)
+        self.highLevelDegTarget = 0  # Sudut yang harus dicapai oleh robot (radian)
 
         self.skipFrame = 1
 
@@ -257,10 +250,11 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.flat_env.reset()
 
         self.cur_timestep = 0
-        
+
         # Init target
         self.target = self.getRandomVec(self.targetLen, 0)
-        self.highLevelDegTarget = 0
+        # self.target = np.array([0, 3, 0])
+
         self.setWalkTarget(self.target[0], self.target[1])
 
         self.selected_motion = 1  # 0 = 08_03, 1 = 09_03
@@ -271,26 +265,33 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         # robotPos = self.getRandomVec(3, 1.15)
         robotPos = np.array([0, 0, 1.15])
         self.robot_pos = np.array([robotPos[0], robotPos[1], 0])
-        self.last_robotPos  = self.robot_pos.copy()
+        self.last_robotPos = self.robot_pos.copy()
         self.flat_env.robot.robot_body.reset_position(robotPos)
-        
+
         degToTarget = np.rad2deg(np.arctan2(self.target[1], self.target[0]))
+        self.highLevelDegTarget = np.deg2rad(degToTarget)
         robotRot = R.from_euler("z", degToTarget + resetYaw, degrees=True)
         self.flat_env.robot.robot_body.reset_orientation(robotRot.as_quat())
 
-        endPointRef = self.end_point_df[self.selected_motion].iloc[self.selected_motion_frame]
-        endPointRefNext = self.end_point_df[self.selected_motion].iloc[self.selected_motion_frame + 1]
+        endPointRef = self.end_point_df[self.selected_motion].iloc[
+            self.selected_motion_frame
+        ]
+        endPointRefNext = self.end_point_df[self.selected_motion].iloc[
+            self.selected_motion_frame + 1
+        ]
 
         # Gunakan kaki kanan sebagai acuan
         rightFootPosActual = self.flat_env.parts["right_foot"].get_position()
         rightFootPosActual[2] = 0
         rotDeg = R.from_euler("z", degToTarget, degrees=True)
-        rightFootPosRef = rotDeg.apply(getJointPos(endPointRef, self.end_point_map["right_foot"]))
+        rightFootPosRef = rotDeg.apply(
+            getJointPos(endPointRef, self.end_point_map["right_foot"])
+        )
         rightFootPosRef[2] = 0
         # Pilih hips pos agar starting_ep_pos + rightFootPosRef == rightFootPosActual
         # starting_ep_pos = rightFootPosActual - rightFootPosRef
         self.starting_ep_pos = rightFootPosActual - rightFootPosRef
-        
+
         rightLegPosRef = rotDeg.apply(getJointPos(endPointRef, "RightLeg"))
         rightLegPosRefNext = rotDeg.apply(getJointPos(endPointRefNext, "RightLeg"))
         startingVelocity = (rightLegPosRefNext - rightLegPosRef) / 0.0165
@@ -340,6 +341,12 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
     def step(self, action_dict):
         assert len(action_dict) == 1, action_dict
+
+        body_xyz = self.flat_env.robot.body_xyz
+        self.robot_pos[0] = body_xyz[0]
+        self.robot_pos[1] = body_xyz[1]
+        self.robot_pos[2] = 0
+
         if "high_level_agent" in action_dict:
             return self.high_level_step(action_dict["high_level_agent"])
         else:
@@ -416,20 +423,21 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         z = self.cur_obs[0] + self.flat_env.robot.initial_z
         # return +2 if z > 0.78 else -1
         return +2 if z > 0.75 else -1
-    
+
     def calcElectricityCost(self, action):
-        runningCost = -1.0 * float(np.abs(action * self.flat_env.robot.joint_speeds).mean())
+        runningCost = -1.0 * float(
+            np.abs(action * self.flat_env.robot.joint_speeds).mean()
+        )
         stallCost = -0.1 * float(np.square(action).mean())
         return runningCost + stallCost
 
     def calcJointLimitCost(self):
         return -0.1 * self.flat_env.robot.joints_at_limit
-    
 
     def checkTarget(self):
         distToTarget = np.linalg.norm(self.robot_pos - self.target)
 
-        if(distToTarget <= 1):
+        if distToTarget <= 1:
             _, _, yaw = self.flat_env.robot.robot_body.pose().rpy()
             randomTarget = self.getRandomVec(self.targetLen, 0, initYaw=yaw)
             newTarget = self.robot_pos + randomTarget
@@ -439,7 +447,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
             self.highTargetScore = -self.targetLen
 
     def drawDebugRobotPosLine(self):
-        if(self.cur_timestep % 10 == 0):
+        if self.cur_timestep % 10 == 0:
             drawLine(self.last_robotPos, self.robot_pos, [1, 1, 1], lifeTime=0)
             self.last_robotPos = self.robot_pos.copy()
 
@@ -453,10 +461,14 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.delta_deltaJoints = (jointScore - self.deltaJoints) / 0.0165
         self.delta_deltaVelJoints = (jointVelScore - self.deltaVelJoints) / 0.0165 * 0.1
         self.delta_deltaEndPoints = (endPointScore - self.deltaEndPoints) / 0.0165
-        self.delta_lowTargetScore = (lowTargetScore - self.lowTargetScore) / 0.0165 * 0.1
-        self.delta_highTargetScore = (highTargetScore - self.highTargetScore) / 0.0165 * 0.1
+        self.delta_lowTargetScore = (
+            (lowTargetScore - self.lowTargetScore) / 0.0165 * 0.1
+        )
+        self.delta_highTargetScore = (
+            (highTargetScore - self.highTargetScore) / 0.0165 * 0.1
+        )
 
-        self.deltaJoints =  jointScore
+        self.deltaJoints = jointScore
         self.deltaVelJoints = jointVelScore
         self.deltaEndPoints = endPointScore
         self.lowTargetScore = lowTargetScore
@@ -471,12 +483,21 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         actionDegree = np.rad2deg(np.arctan2(action[1], action[0]))
         _, _, yaw = self.flat_env.robot.robot_body.pose().rpy()
         newDegree = np.interp(actionDegree, [-180, 180], [-45, 45]) + np.rad2deg(yaw)
-        cosTarget, sinTarget = np.cos(np.deg2rad(newDegree)), np.sin(
-            np.deg2rad(newDegree)
-        )
         self.highLevelDegTarget = np.deg2rad(newDegree)
+        cosTarget, sinTarget = np.cos(self.highLevelDegTarget), np.sin(
+            self.highLevelDegTarget
+        )
         newWalkTarget = self.robot_pos + np.array([cosTarget, sinTarget, 0]) * 5
         self.setWalkTarget(newWalkTarget[0], newWalkTarget[1])
+
+        # Re-calculate starting_ep_pos
+        vRobotTarget = newWalkTarget - self.robot_pos
+        lenSEP = np.linalg.norm(self.starting_ep_pos - self.robot_pos)
+        # drawLine(self.robot_pos, self.starting_ep_pos, [1, 1, 1], lifeTime=100)
+        self.starting_ep_pos = -vRobotTarget / np.linalg.norm(vRobotTarget)
+        self.starting_ep_pos *= lenSEP
+        self.starting_ep_pos += self.robot_pos
+
         # self.selected_motion = int(np.interp(action[2], [-1, 1], [0, len(self.motion_list) - 1]))
         # self.selected_motion_frame = int(np.interp(action[3], [-1, 1], [0, self.max_frame[self.selected_motion] - 1]))
         # print("Mot, frame: ", self.selected_motion, self.selected_motion_frame)
@@ -501,11 +522,6 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         f_obs = self.flat_env.robot.calc_state()
 
-        body_xyz = self.flat_env.robot.body_xyz
-        self.robot_pos[0] = body_xyz[0]
-        self.robot_pos[1] = body_xyz[1]
-        self.robot_pos[2] = 0
-
         self.cur_obs = f_obs
 
         self.updateReward(action=action)
@@ -520,7 +536,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
             self.aliveReward,
         ]
 
-        rewardWeight = [0.1, 0.1, 0.5, 0.2, 0.2, 0.2, 0.1]
+        rewardWeight = [0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.1]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):

@@ -71,8 +71,8 @@ if __name__ == "__main__":
 
     agent = PPOTrainer(config_low)
     experiment_name = "HWalk_Low_Mimic"
-    experiment_id = "PPO_HumanoidBulletEnvLow-v0_f8215_00000_0_2021-04-18_16-56-31"
-    checkpoint_num = "930"
+    experiment_id = "PPO_HumanoidBulletEnvLow-v0_699c9_00000_0_2021-04-18_22-14-39"
+    checkpoint_num = "1930"
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name, experiment_id, checkpoint_num, checkpoint_num
@@ -84,6 +84,7 @@ if __name__ == "__main__":
     fps = 60.0
     qKey = ord("q")
     rKey = ord("r")
+    eKey = ord("e")
 
     doneAll = False
     while not doneAll:
@@ -96,9 +97,11 @@ if __name__ == "__main__":
         print("Deg obs: ", degObs)
         # print(env.target, env.targetHighLevel)
         drawAxis()
+        pause = False
         while not done and not doneAll:
-            action = agent.compute_action(observation)
-            observation, reward, done, info = env.step(action)
+            if (not pause):
+                action = agent.compute_action(observation)
+                observation, reward, done, info = env.step(action)
             # print(env.lowTargetScore)
             # Garis dari origin ke target akhir yang harus dicapai robot
             # drawLine([0, 0, 0], env.target, [0, 1, 0])
@@ -127,6 +130,8 @@ if __name__ == "__main__":
                 doneAll = True
             elif rKey in keys and keys[rKey] & pybullet.KEY_WAS_TRIGGERED:
                 done = True
+            elif eKey in keys and keys[eKey] & pybullet.KEY_WAS_TRIGGERED:
+                pause = not pause
         print("Survived {} steps".format(env.cur_timestep))
         pybullet.removeAllUserDebugItems()
     env.close()

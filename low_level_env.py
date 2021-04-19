@@ -26,7 +26,9 @@ def getJointPos(df, joint, multiplier=1):
 
 
 def drawLine(c1, c2, color, lifeTime=0.1):
-    return pybullet.addUserDebugLine(c1, c2, lineColorRGB=color, lineWidth=5, lifeTime=lifeTime)
+    return pybullet.addUserDebugLine(
+        c1, c2, lineColorRGB=color, lineWidth=5, lifeTime=lifeTime
+    )
 
 
 class LowLevelHumanoidEnv(gym.Env):
@@ -38,22 +40,24 @@ class LowLevelHumanoidEnv(gym.Env):
         # self.observation_space = Box(
         #     low=-np.inf, high=np.inf, shape=[1 + 5 + 17 * 2 + 2 + 8]
         # )
-        self.observation_space = Box(low=-np.inf, high=np.inf, shape=[42 + 8 * 2]) # Foot contact tidak dimasukan
+        self.observation_space = Box(
+            low=-np.inf, high=np.inf, shape=[42 + 8 * 2]
+        )  # Foot contact tidak dimasukan
         self.action_space = self.flat_env.action_space
 
         reference_name = "motion09_03"
-
+        basePath = "~/GitHub/TA/Relative_Joints_CSV"
         self.joints_df = pd.read_csv(
-            "Processed Relative Joints CSV/{}JointPosRad.csv".format(reference_name)
+            "{}/{}JointPosRad.csv".format(basePath, reference_name)
         )
         self.joints_vel_df = pd.read_csv(
-            "Processed Relative Joints CSV/{}JointSpeedRadSec.csv".format(reference_name)
+            "{}/{}JointSpeedRadSec.csv".format(basePath, reference_name)
         )
         self.joints_rel_df = pd.read_csv(
-            "Processed Relative Joints CSV/{}JointPosRadRelative.csv".format(reference_name)
+            "{}/{}JointPosRadRelative.csv".format(basePath, reference_name)
         )
         self.end_point_df = pd.read_csv(
-            "Processed Relative Joints CSV/{}JointVecFromHip.csv".format(reference_name)
+            "{}/{}JointVecFromHip.csv".format(basePath, reference_name)
         )
 
         self.cur_timestep = 0
@@ -64,7 +68,9 @@ class LowLevelHumanoidEnv(gym.Env):
         # Untuk 08_03, frame 0 - 125 merupakan siklus (2 - 127 di blender)
         # Untuk 09_01, frame 0 - 90 merupakan siklus (1 - 91 di blender)
         # Untuk 02_04, frame 0 - 298 (2 - 300 di blender)
-        self.max_frame = len(self.joints_df) - 1 # Minus 1 karena velocity merupakan delta position
+        self.max_frame = (
+            len(self.joints_df) - 1
+        )  # Minus 1 karena velocity merupakan delta position
 
         self.rng = np.random.default_rng()
 
@@ -165,31 +171,49 @@ class LowLevelHumanoidEnv(gym.Env):
         self.flat_env.jdict["abdomen_y"].set_state(0, 0)
         self.flat_env.jdict["abdomen_z"].set_state(0, 0)
 
-        self.flat_env.jdict["right_knee"].set_state(jointsRef["rightKnee"], jointsVelRef["rightKnee"])
+        self.flat_env.jdict["right_knee"].set_state(
+            jointsRef["rightKnee"], jointsVelRef["rightKnee"]
+        )
 
-        self.flat_env.jdict["right_hip_x"].set_state(jointsRef["rightHipX"], jointsVelRef["rightHipX"])
-        self.flat_env.jdict["right_hip_y"].set_state(jointsRef["rightHipY"], jointsVelRef["rightHipY"])
-        self.flat_env.jdict["right_hip_z"].set_state(jointsRef["rightHipZ"], jointsVelRef["rightHipZ"])
+        self.flat_env.jdict["right_hip_x"].set_state(
+            jointsRef["rightHipX"], jointsVelRef["rightHipX"]
+        )
+        self.flat_env.jdict["right_hip_y"].set_state(
+            jointsRef["rightHipY"], jointsVelRef["rightHipY"]
+        )
+        self.flat_env.jdict["right_hip_z"].set_state(
+            jointsRef["rightHipZ"], jointsVelRef["rightHipZ"]
+        )
 
-        self.flat_env.jdict["left_knee"].set_state(jointsRef["leftKnee"], jointsVelRef["leftKnee"])
+        self.flat_env.jdict["left_knee"].set_state(
+            jointsRef["leftKnee"], jointsVelRef["leftKnee"]
+        )
 
-        self.flat_env.jdict["left_hip_x"].set_state(jointsRef["leftHipX"], jointsVelRef["leftHipX"])
-        self.flat_env.jdict["left_hip_y"].set_state(jointsRef["leftHipY"], jointsVelRef["leftHipY"])
-        self.flat_env.jdict["left_hip_z"].set_state(jointsRef["leftHipZ"], jointsVelRef["leftHipZ"])
+        self.flat_env.jdict["left_hip_x"].set_state(
+            jointsRef["leftHipX"], jointsVelRef["leftHipX"]
+        )
+        self.flat_env.jdict["left_hip_y"].set_state(
+            jointsRef["leftHipY"], jointsVelRef["leftHipY"]
+        )
+        self.flat_env.jdict["left_hip_z"].set_state(
+            jointsRef["leftHipZ"], jointsVelRef["leftHipZ"]
+        )
 
     def incFrame(self, inc):
         # self.frame_update_cnt = (self.frame_update_cnt + 1) % 2
         # if(self.frame_update_cnt == 0):
         self.frame = (self.frame + inc) % (self.max_frame - 1)
-        
-        if(self.frame == 0):
+
+        if self.frame == 0:
             self.starting_ep_pos = self.robot_pos.copy()
 
     def reset(self):
         # Insialisasi dengan posisi awal random sesuai referensi
         # return self.resetWithYaw(self.rng.integers(-10, 10))
         # return self.resetFromFrame(startFrame=self.rng.integers(0, self.max_frame-5), resetYaw=self.rng.integers(-180, 180))
-        return self.resetFromFrame(startFrame=self.rng.integers(0, self.max_frame-5), resetYaw=0)
+        return self.resetFromFrame(
+            startFrame=self.rng.integers(0, self.max_frame - 5), resetYaw=0
+        )
 
     def setWalkTarget(self, x, y):
         self.flat_env.walk_target_x = x
@@ -202,21 +226,29 @@ class LowLevelHumanoidEnv(gym.Env):
         degTargetRobot = np.arctan2(vTargetRobot[1], vTargetRobot[0])
         lenTargetRobot = np.linalg.norm(vTargetRobot)
         _, _, yaw = self.flat_env.robot.robot_body.pose().rpy()
-        degLimit = np.deg2rad(45)
-        if (degTargetRobot - yaw > degLimit):
-            vTargetRobot = np.array([np.cos(degLimit + yaw), np.sin(degLimit + yaw), 0]) * lenTargetRobot
-        elif (degTargetRobot - yaw < -degLimit):
-            vTargetRobot = np.array([np.cos(-degLimit + yaw), np.sin(-degLimit + yaw), 0]) * lenTargetRobot
-        
+        degLimit = np.deg2rad(135)
+        if degTargetRobot - yaw > degLimit:
+            vTargetRobot = (
+                np.array([np.cos(degLimit + yaw), np.sin(degLimit + yaw), 0])
+                * lenTargetRobot
+            )
+        elif degTargetRobot - yaw < -degLimit:
+            vTargetRobot = (
+                np.array([np.cos(-degLimit + yaw), np.sin(-degLimit + yaw), 0])
+                * lenTargetRobot
+            )
+
         self.targetHighLevel = vTargetRobot
-        
+
         vTargetRobot = vTargetRobot / lenTargetRobot
-        walkTarget = self.robot_pos + vTargetRobot * (self.targetHighLevelLen - (self.targetLen - lenTargetRobot))
+        walkTarget = self.robot_pos + vTargetRobot * (
+            self.targetHighLevelLen - (self.targetLen - lenTargetRobot)
+        )
         self.setWalkTarget(walkTarget[0], walkTarget[1])
 
     def getRandomVec(self, vecLen, z, initYaw=0):
         # randomRad = initYaw + np.deg2rad(self.rng.integers(-180, 180))
-        randomRad = initYaw + np.deg2rad(self.rng.integers(-45, 45))
+        randomRad = initYaw + np.deg2rad(self.rng.integers(-180, 180))
         randomX = np.cos(randomRad) * vecLen
         randomY = np.sin(randomRad) * vecLen
 
@@ -237,11 +269,13 @@ class LowLevelHumanoidEnv(gym.Env):
         # robotPos = self.getRandomVec(3, 1.15)
         robotPos = np.array([0, 0, 1.15])
         self.robot_pos = np.array([robotPos[0], robotPos[1], 0])
-        self.last_robotPos  = self.robot_pos.copy()
+        self.last_robotPos = self.robot_pos.copy()
         self.reassignWalkTarget()
         self.flat_env.robot.robot_body.reset_position(robotPos)
-        
-        degToTarget = np.rad2deg(np.arctan2(self.targetHighLevel[1], self.targetHighLevel[0]))
+
+        degToTarget = np.rad2deg(
+            np.arctan2(self.targetHighLevel[1], self.targetHighLevel[0])
+        )
         robotRot = R.from_euler("z", degToTarget + resetYaw, degrees=True)
         self.flat_env.robot.robot_body.reset_orientation(robotRot.as_quat())
 
@@ -249,14 +283,22 @@ class LowLevelHumanoidEnv(gym.Env):
         rightFootPosActual = self.flat_env.parts["right_foot"].get_position()
         rightFootPosActual[2] = 0
         rotDeg = R.from_euler("z", degToTarget, degrees=True)
-        rightFootPosRef = rotDeg.apply(getJointPos(self.end_point_df.iloc[self.frame], self.end_point_map["right_foot"]))
+        rightFootPosRef = rotDeg.apply(
+            getJointPos(
+                self.end_point_df.iloc[self.frame], self.end_point_map["right_foot"]
+            )
+        )
         rightFootPosRef[2] = 0
         # Pilih hips pos agar starting_ep_pos + rightFootPosRef == rightFootPosActual
         # starting_ep_pos = rightFootPosActual - rightFootPosRef
         self.starting_ep_pos = rightFootPosActual - rightFootPosRef
-        
-        rightLegPosRef = rotDeg.apply(getJointPos(self.end_point_df.iloc[self.frame], "RightLeg"))
-        rightLegPosRefNext = rotDeg.apply(getJointPos(self.end_point_df.iloc[self.frame + 1], "RightLeg"))
+
+        rightLegPosRef = rotDeg.apply(
+            getJointPos(self.end_point_df.iloc[self.frame], "RightLeg")
+        )
+        rightLegPosRefNext = rotDeg.apply(
+            getJointPos(self.end_point_df.iloc[self.frame + 1], "RightLeg")
+        )
         startingVelocity = (rightLegPosRefNext - rightLegPosRef) / 0.0165
         self.flat_env.robot.robot_body.reset_velocity(linearVelocity=startingVelocity)
 
@@ -266,11 +308,11 @@ class LowLevelHumanoidEnv(gym.Env):
 
         self.frame_update_cnt = 0
         self.incFrame(self.skipFrame)
-        
+
         self.cur_obs = self.flat_env.robot.calc_state()
         return self.getLowLevelObs()
 
-    def getLowLevelObs(self):        
+    def getLowLevelObs(self):
         jointTargetObs = []
         jointsRelRef = self.joints_rel_df.iloc[self.frame]
         jointsVelRef = self.joints_vel_df.iloc[self.frame]
@@ -280,7 +322,7 @@ class LowLevelHumanoidEnv(gym.Env):
         jointTargetObs = np.array(jointTargetObs)
 
         targetInfo = self.cur_obs[1:3]
-        jointInfo = self.cur_obs[8:8+17*2]
+        jointInfo = self.cur_obs[8 : 8 + 17 * 2]
 
         # return np.hstack((targetInfo, jointInfo, jointTargetObs))
         return np.hstack((self.cur_obs[:-2], jointTargetObs))
@@ -325,7 +367,7 @@ class LowLevelHumanoidEnv(gym.Env):
 
     def calcEndPointScore(self, debug=False):
         deltaEndPoint = 0
-        if(debug):
+        if debug:
             deltaEndPoint = []
         endPointRef = self.end_point_df.iloc[self.frame]
 
@@ -338,16 +380,18 @@ class LowLevelHumanoidEnv(gym.Env):
         for epMap in self.end_point_map:
             v1 = self.flat_env.parts[epMap].get_position()
             # v2 = base_pos + r.apply(getJointPos(endPointRef, self.end_point_map[epMap]))
-            v2 = self.starting_ep_pos + r.apply(getJointPos(endPointRef, self.end_point_map[epMap]))
-            drawLine(v1, v2, [1, 0, 0])
+            v2 = self.starting_ep_pos + r.apply(
+                getJointPos(endPointRef, self.end_point_map[epMap])
+            )
+            # drawLine(v1, v2, [1, 0, 0])
             deltaVec = v2 - v1
             dist = np.linalg.norm(deltaVec)
-            if(debug):
-                deltaEndPoint.append(dist* self.end_point_weight[epMap])
+            if debug:
+                deltaEndPoint.append(dist * self.end_point_weight[epMap])
             else:
                 deltaEndPoint += dist * self.end_point_weight[epMap]
 
-        if(debug):
+        if debug:
             return deltaEndPoint
         else:
             # score = np.exp(-10 * (deltaEndPoint/self.end_point_weight_sum))
@@ -364,7 +408,9 @@ class LowLevelHumanoidEnv(gym.Env):
         return +2 if z > 0.75 else -1
 
     def calcElectricityCost(self, action):
-        runningCost = -1.0 * float(np.abs(action * self.flat_env.robot.joint_speeds).mean())
+        runningCost = -1.0 * float(
+            np.abs(action * self.flat_env.robot.joint_speeds).mean()
+        )
         stallCost = -0.1 * float(np.square(action).mean())
         return runningCost + stallCost
 
@@ -380,7 +426,7 @@ class LowLevelHumanoidEnv(gym.Env):
     def checkTarget(self):
         distToTarget = np.linalg.norm(self.robot_pos - self.target)
 
-        if(distToTarget <= 1):
+        if distToTarget <= 1:
             _, _, yaw = self.flat_env.robot.robot_body.pose().rpy()
             randomTarget = self.getRandomVec(self.targetLen, 0, initYaw=yaw)
             newTarget = self.robot_pos + randomTarget
@@ -388,26 +434,28 @@ class LowLevelHumanoidEnv(gym.Env):
             self.target = newTarget
             self.starting_ep_pos = self.robot_pos.copy()
             self.last_lowTargetScore = self.lowTargetScore
-        
+
         self.reassignWalkTarget()
 
     def drawDebugRobotPosLine(self):
-        if(self.cur_timestep % 10 == 0):
+        if self.cur_timestep % 10 == 0:
             drawLine(self.last_robotPos, self.robot_pos, [1, 1, 1], lifeTime=0)
             self.last_robotPos = self.robot_pos.copy()
-    
+
     def updateReward(self, action):
         jointScore = self.calcJointScore()
         jointVelScore = self.calcJointVelScore()
         endPointScore = self.calcEndPointScore()
         lowTargetScore = self.calcLowLevelTargetScore()
-        
+
         self.delta_deltaJoints = (jointScore - self.deltaJoints) / 0.0165
         self.delta_deltaVelJoints = (jointVelScore - self.deltaVelJoints) / 0.0165 * 0.1
         self.delta_deltaEndPoints = (endPointScore - self.deltaEndPoints) / 0.0165
-        self.delta_lowTargetScore = (lowTargetScore - self.lowTargetScore) / 0.0165 * 0.1
+        self.delta_lowTargetScore = (
+            (lowTargetScore - self.lowTargetScore) / 0.0165 * 0.1
+        )
 
-        self.deltaJoints =  jointScore
+        self.deltaJoints = jointScore
         self.deltaVelJoints = jointVelScore
         self.deltaEndPoints = endPointScore
         self.lowTargetScore = lowTargetScore
@@ -415,7 +463,7 @@ class LowLevelHumanoidEnv(gym.Env):
         self.electricityScore = self.calcElectricityCost(action)
         self.jointLimitScore = self.calcJointLimitCost()
         self.aliveReward = self.calcAliveReward()
-        
+
     def low_level_step(self, action):
         # Step di env yang sebenarnya
         # f_obs, f_rew, f_done, _ = self.flat_env.step(action)
@@ -423,7 +471,7 @@ class LowLevelHumanoidEnv(gym.Env):
         self.flat_env.scene.global_step()
 
         f_obs = self.flat_env.robot.calc_state()  # also calculates self.joints_at_limit
-        
+
         body_xyz = self.flat_env.robot.body_xyz
         self.robot_pos[0] = body_xyz[0]
         self.robot_pos[1] = body_xyz[1]
@@ -455,7 +503,7 @@ class LowLevelHumanoidEnv(gym.Env):
 
         self.checkTarget()
 
-        # self.drawDebugRobotPosLine()
+        self.drawDebugRobotPosLine()
 
         obs = self.getLowLevelObs()
 

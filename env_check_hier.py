@@ -106,8 +106,8 @@ if __name__ == "__main__":
 
     agent = PPOTrainer(config)
     experiment_name = "HWalk_Hier_Mimic"
-    experiment_id = "PPO_HumanoidBulletEnvHier-v0_d6128_00000_0_2021-04-12_06-32-45"
-    checkpoint_num = "1250"
+    experiment_id = "PPO_HumanoidBulletEnvHier-v0_3b65d_00000_0_2021-04-19_15-24-09"
+    checkpoint_num = "840"
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name, experiment_id, checkpoint_num, checkpoint_num
@@ -119,32 +119,39 @@ if __name__ == "__main__":
     fps = 60.0
     qKey = ord("q")
     rKey = ord("r")
+    eKey = ord("e")
 
     doneAll = False
     while not doneAll:
         done = False
         env.render()
         observation = env.reset()
-        print("Start from frame: ", env.frame)
-        sinObs, cosObs = observation[1], observation[2]
-        degObs = np.rad2deg(np.arctan2(sinObs, cosObs))
-        print("Deg obs: ", degObs)
-        pybullet.removeAllUserDebugItems()
+        print("Start from frame: ", env.selected_motion_frame)
+        # sinObs, cosObs = observation[1], observation[2]
+        # degObs = np.rad2deg(np.arctan2(sinObs, cosObs))
+        # print("Deg obs: ", degObs)
+        
         drawAxis()
+        pause = True
         while not done and not doneAll:
             action = dict()
-            if('high_level_agent' in observation):
-                action['high_level_agent'] = agent.compute_action(observation['high_level_agent'], policy_id='high_level_policy')
-            else:
-                action[env.low_level_agent_id] = agent.compute_action(observation[env.low_level_agent_id], policy_id='low_level_policy')
-            observation, reward, f_done, info = env.step(action)
-            
+            if(not pause):
+                if('high_level_agent' in observation):
+                    action['high_level_agent'] = agent.compute_action(observation['high_level_agent'], policy_id='high_level_policy')
+                    # if(not pause):
+                        # pause = True
+                else:
+                    action[env.low_level_agent_id] = agent.compute_action(observation[env.low_level_agent_id], policy_id='low_level_policy')
+                observation, reward, f_done, info = env.step(action)
+                done = f_done['__all__'] == True
             targetHL = np.array([
                 np.cos(env.highLevelDegTarget),
                 np.sin(env.highLevelDegTarget),
                 0
             ]) * 5
-            drawLine(env.robot_pos, env.robot_pos + targetHL, [0, 0, 0])
+            drawLine(env.robot_pos, env.robot_pos + targetHL, [0, 1, 0])
+
+            drawLine(env.starting_ep_pos, env.robot_pos + targetHL, [0, 0, 1])
 
             time.sleep(1.0 / fps)
 
@@ -154,6 +161,9 @@ if __name__ == "__main__":
                 doneAll = True
             elif rKey in keys and keys[rKey] & pybullet.KEY_WAS_TRIGGERED:
                 done = True
+            elif eKey in keys and keys[eKey] & pybullet.KEY_WAS_TRIGGERED:
+                pause = not pause
         print("Survived {} steps".format(env.cur_timestep))
+        pybullet.removeAllUserDebugItems()
     env.close()
     ray.shutdown()
