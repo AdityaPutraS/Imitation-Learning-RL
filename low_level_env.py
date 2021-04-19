@@ -149,6 +149,7 @@ class LowLevelHumanoidEnv(gym.Env):
         self.delta_deltaVelJoints = 0
         self.delta_deltaEndPoints = 0
         self.delta_lowTargetScore = 0
+        self.delta_highTargetScore = 0
 
     def close(self):
         self.flat_env.close()
@@ -360,7 +361,7 @@ class LowLevelHumanoidEnv(gym.Env):
         # Didapat dari perhitungan reward alive env humanoid
         z = self.cur_obs[0] + self.flat_env.robot.initial_z
         # return +2 if z > 0.78 else -1
-        return +2 if z > 0.5 else -1
+        return +2 if z > 0.75 else -1
 
     def calcElectricityCost(self, action):
         runningCost = -1.0 * float(np.abs(action * self.flat_env.robot.joint_speeds).mean())

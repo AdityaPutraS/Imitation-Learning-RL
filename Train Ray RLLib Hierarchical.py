@@ -33,7 +33,7 @@ def make_env(env_config):
 
 ENV_NAME = "HumanoidBulletEnvHier-v0"
 register_env(ENV_NAME, make_env)
-TARGET_REWARD = 5000
+TARGET_REWARD = 10000
 
 
 def policy_mapping_fn(agent_id):
@@ -95,6 +95,7 @@ config = {
     "kl_coeff": 1.0,
     "num_sgd_iter": 20,
     "lr": 0.0005,
+    "vf_clip_param": 10,
     "sgd_minibatch_size": 12000,
     "train_batch_size": 36000,
     "batch_mode": "complete_episodes",
@@ -105,7 +106,7 @@ experiment_name = "HWalk_Hier_Mimic"
 experiment_id = "PPO_HumanoidBulletEnvHier-v0_66b0b_00000_0_2021-04-11_16-39-16"
 checkpoint_num = "940"
 
-resume = True
+resume = False
 
 tune.run(
     PPOTrainer,

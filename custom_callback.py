@@ -42,7 +42,7 @@ class RewardLogCallback(DefaultCallbacks):
         episode.user_data["base_reward"].append(br)
 
         lts = base_env.get_unwrapped()[0].delta_lowTargetScore
-        hts = base_env.get_unwrapped()[0].highTargetScore
+        hts = base_env.get_unwrapped()[0].delta_highTargetScore
         episode.user_data["low_target_score"].append(lts)
         episode.user_data["high_target_score"].append(hts)
 

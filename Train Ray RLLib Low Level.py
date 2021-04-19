@@ -71,10 +71,10 @@ resume = False
 tune.run(
     PPOTrainer,
     name="HWalk_Low_Mimic",
-    # resume=resume,
-    restore="/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
-        experiment_name, experiment_id, checkpoint_num, checkpoint_num
-    ) if resume else "",
+    resume=True,
+    # restore="/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
+    #     experiment_name, experiment_id, checkpoint_num, checkpoint_num
+    # ) if resume else "",
     checkpoint_at_end=True,
     checkpoint_freq=10,
     checkpoint_score_attr="episode_reward_mean",
