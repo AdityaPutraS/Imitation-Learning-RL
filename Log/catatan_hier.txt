@@ -1,0 +1,180 @@
+==================
+Eksperimen dibawah telah dihapus, cari di hdd untuk backup
+==================
+PPO_HumanoidBulletEnv-v0-Hier_84746_00000_0_2021-03-25_11-30-59:
+	score high: high target + low target + base reward
+	score low: base reward + 0.05 * delta joint + delta end point + low target
+	skipframe = 2
+	syarat frame update cnt = 5 untuk naikin frame
+	syarat delta joint >= 0.5 & delta endpoint >= 0.5
+	high obs = cur obs (raw obs dari flat env)
+	low obs = curobs[3:3+5] (robot info) + curobs[8:8+17*2] (joint val) + target high level xy 
+	calc joint = exp(-5 * dj / weight sum)
+	calc endpoint = 2 * exp(-10 * dep / weight sum)
+	calc high target = exp(- drobotTarget )
+	calc low target = exp(- drobotTargetHL )
+	num worker = 5
+	num env per worker = 6
+	lr = 0.0005
+	
+	hasil: Belum bisa jalan, robot diam lama, terus jatuh
+	
+PPO_HumanoidBulletEnv-v0-Hier_2aea3_00000_0_2021-03-25_15-10-23:
+	update:
+		score high: high target + low target
+		score high ketika step remaining <= 0: 0
+		skipframe = 1
+		weight low agent = [1, 1, 1, 0.5, 0]
+		low agent id tetap, tidak berubah ubah sesuai high level step
+		syarat delta joint >= 0.15 & delta endpoint >= 0.15
+		calc high target = exp(- drobotTarget/5 )
+		calc low target = exp(- drobotTargetHL/5 )
+		weight joint: 3 -> 1.5 (knee, hip y), sisanya 1
+	hasil: Bisa jalan,tp dengan 1 kaki dan masih belum terlalu bisa mengejar target
+	
+PPO_HumanoidBulletEnv-v0-Hier_ece09_00000_0_2021-03-25_18-50-34:
+	update:
+		fix incframe: sebelumnya frame = +inc, sekarang frame += inc
+		randomize progression di awal, jadi robot berada n% dari target di awal (n = 0 - 80)
+		weight low agent = [1, 0.1, 1, 1, 0]
+		reward high agent = self.highTargetScore + self.lowTargetScore / (self.steps_remaining_at_level + 1) jika selesai terlebih dahulu dan
+		self.highTargetScore + self.lowTargetScore jika selesai saat step sisa 0
+		step at level = 100
+	global update:
+		checkpoint jadi setiap 10 iterasi
+		simpan semua checkpoint
+		
+	hasil: Jatuh terus, terlihat lumayan bisa ke arah target high level, tapi tidak yang ekstrim
+	
+PPO_HumanoidBulletEnv-v0-Hier_c422a_00000_0_2021-03-25_22-31-20:
+	update:
+		weight endpoint untuk low level= 1 => 1.5
+		weight low target score = 1 => 4
+		reward highTarget dan lowTarget dikali 2
+		syarat frame update cnt = 5 => 10
+		ganti observation low level = targetHL => delta robot dengan target HL
+		skipFrame = 2 
+		weight joint yang 1.5 jadi 3
+	global update:
+		model high level = [64, 4] => [16, 8, 4]
+		lr = 0.0005 => 0.001
+	hasil: Sudah lebih bisa jalan, meskipun jalannya seperti loncat loncat, tapi masih jatuh jatuh
+	
+PPO_HumanoidBulletEnv-v0-Hier_95788_00000_0_2021-03-26_07-05-25:
+	update:
+		skipFrame = 2 => 1
+		stepPerLevel = 100 => 50
+		fix assignment targetHighLevel, sebelumnya hanya action[0], action[1]. Sekarang menjadi vRobot[0]+action[0], vRobot[1]+action[1]
+		weight low agent = [1, 0.1, 1.5, 4, 0] => [1, 0.1, 1, 1.5, 0]
+		syarat deltaJoints = >=0.2 => >=0.15
+		pindah incFrame menjadi setelah assign reward semua
+	global update:
+		lr = 0.001 => 0.0001
+		model high = [16, 8, 4] => [64, 16]
+		num env per worker = 6 => 10
+	hasil: Menahan postur, berusaha untuk belok, tapi akhirnya berputar putar, gagal mencapai target (baik target akhir / target high level)
+	
+PPO_HumanoidBulletEnv-v0-Hier_95788_00000_0_2021-03-26_07-05-25:
+	update:
+		randomX dari -20 s/d 20 => 0 s/d 20
+		reward high level agent dari dibagi remaining step menjadi dikali (step_per_level - remaining step + 1)
+		weight delta joint menjadi 1
+		weight low target score menjadi 1
+	global update:
+		
+	hasil: Gagal
+	
+==================================================================================
+Versi env high baru dengan joint velocity dan observasi yang berbeda
+==================================================================================
+PPO_HumanoidBulletEnvHier-v0_d61a7_00000_0_2021-04-08_12-35-24:
+	update:
+		di sesuaikan dengan low level env
+		high level mengatur aksi yang harus dilakukan dan mulai dari frame berapa
+	global update:
+		disesuaikan dengan low level env
+		filter observation MeanStdFilter => NoFilter
+	hasil: Robot diam di tempat, tidak jatuh (unik sebenarnya karena bisa menahan posisi berdiri)
+	
+PPO_HumanoidBulletEnvHier-v0_85192_00000_0_2021-04-08_21-37-10:
+	update:
+		endpoint diubah menjadi koordinat global
+		perhitungan score endpoint berdasar delta posisi sendi dan posisi sendi seharusnya menurut dataset
+			posisi sendi seharusnya merupakan posisi dataset + posisi ep awal
+			posisi ep awal merupakan posisi robot tiap kali high level melakukan step
+	global update:
+		
+	hasil: Gagal
+	
+PPO_HumanoidBulletEnvHier-v0_d9f3e_00000_0_2021-04-09_08-38-06
+PPO_HumanoidBulletEnvHier-v0_ae12f_00000_0_2021-04-09_18-45-20:
+	update:
+		weight reward endpoint 0.25 => 1
+		weight base reward 1 => 0.25
+		weight joint endpoint yang 3 => 1.1  yang 1 tetap 1
+		assign walk target tiap high level step
+	global update:
+		model [64, 16] => [512, 128]
+		pakai lstm
+	hasil: Gagal, di stop karena salah metode target high level
+	
+PPO_HumanoidBulletEnvHier-v0_f9c67_00000_0_2021-04-09_22-29-21:
+	update:
+		retrain dengan random target dan yaw
+		fix masalah sudut high level target
+	global update:
+		
+	hasil: gagal
+	
+PPO_HumanoidBulletEnvHier-v0_02a53_00000_0_2021-04-10_06-57-50
+PPO_HumanoidBulletEnvHier-v0_48c1b_00000_0_2021-04-10_13-40-40
+PPO_HumanoidBulletEnvHier-v0_7bd7f_00000_0_2021-04-11_09-08-54:
+	update:
+		step per low level dari 50 => sesuai motion yang dipilih high level
+	global update:
+		ganti sistem resume => restore dari checkpoint tertentu
+	hasil: Berjalan tapi hanya 2 langkah,mungkin karena high level masih ngawur dalam memilih
+
+PPO_HumanoidBulletEnvHier-v0_66b0b_00000_0_2021-04-11_16-39-16
+PPO_HumanoidBulletEnvHier-v0_d6128_00000_0_2021-04-12_06-32-45:
+	update:
+		high level tidak memilih motion, motion tetap 08_03 saja
+		pemilihan target dilakukan dengan memilih sudut acak kemudian x = cos(sudut) * 5, y = sin(sudut) * 5, dibanding
+			x = random(-10, 10), y = random(-10, 10)
+		step remaining at level kembali menggunakan step per level dibanding menggunakan max frame
+		reward weight low level = [0.3, 0.25, 0.25, 1] => [1, 0.25, 0.25, 0.1] (mengikuti low level train)
+		high level agent diberi 0.1 * exp dan 0.1 sebagai reward hidupnya
+		tambah pengecekan cur timestep di step
+	global update:
+	
+	hasil: Bisa jalan, tapi tidak bisa mencapai target
+
+==> Coba ganti train ke hanya low level saja
+======================================================
+Policy low level di import dari low level env
+note: train harus 2 kali, pertama harus di train minimal 1 iterasi, kemudian di load checkpoint
+baru bisa mengimport hasil dari low level
+=====================================================
+train_HumanoidBulletEnvHier-v0_03457_00000_0_2021-04-19_23-57-59
+train_HumanoidBulletEnvHier-v0_57cd8_00000_0_2021-04-20_00-21-49:
+	note:
+		reward = [
+		    self.delta_deltaJoints,
+		    self.delta_deltaVelJoints,
+		    self.delta_deltaEndPoints,
+		    self.delta_lowTargetScore,
+		    self.electricityScore,
+		    self.jointLimitScore,
+		    self.aliveReward,
+		]
+
+		rewardWeight = [0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.1]
+		sumber asal dari train_HumanoidBulletEnvHier-v0_41476_00000_0_2021-04-19_23-52-33
+	update:
+		Menyesuaikand dengan perubahan baru di low level
+		high level hanya mengatur sudut target robot saja
+		starting ep pos di re calculate tiap high level step
+	global update:
+	
+	hasil: (23-57-59) 
+		(00-21-49)

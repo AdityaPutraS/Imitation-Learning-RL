@@ -21,6 +21,9 @@ from custom_callback import RewardLogCallback
 
 from train_config import config_hier, config_low, single_env
 from collections import OrderedDict
+from ray.tune import CLIReporter
+
+import os
 
 experiment_name = "HWalk_Low_Mimic"
 experiment_id = "PPO_HumanoidBulletEnvLow-v0_699c9_00000_0_2021-04-18_22-14-39"
@@ -28,16 +31,19 @@ checkpoint_num = "1930"
 
 
 experiment_name_hier = "HWalk_Hier_Mimic"
-experiment_id_hier = "PPO_HumanoidBulletEnvHier-v0_66b0b_00000_0_2021-04-11_16-39-16"
-checkpoint_num_hier = "940"
+experiment_id_hier = "train_HumanoidBulletEnvHier-v0_03457_00000_0_2021-04-19_23-57-59"
+checkpoint_num_hier = "50"
 
-resumeFromCheckpoint = False
-useModelFromLowLevelTrain = True
+resumeFromCheckpoint = True
+useModelFromLowLevelTrain = False
 
 
-def train(config, reporter):
+def train(config, checkpoint_dir=None):
     trainer = PPOTrainer(config=config)
 
+    if checkpoint_dir:
+        trainer.load_checkpoint(checkpoint_dir)
+        
     if useModelFromLowLevelTrain:
         config_low["num_workers"] = 0
         config_low["num_envs_per_worker"] = 1
@@ -61,32 +67,36 @@ def train(config, reporter):
             hw: lowWeight[lw] for hw, lw in zip(highWeight.keys(), lowWeight.keys())
         }
         importedPolicy["_optimizer_variables"] = importedOptState
-        trainer.get_policy("low_level_policy").set_state(importedPolicy)
+        trainer.get_policy("low_level_policy").set_state(importedPolicy)      
 
+    chk_freq = 10
+    
     while True:
         result = trainer.train()
-        reporter(**result)
+        tune.report(**result)
+        if(trainer._iteration % chk_freq == 0):
+            with tune.checkpoint_dir(step=trainer._iteration) as checkpoint_dir:
+                trainer.save(checkpoint_dir)
 
 
 if __name__ == "__main__":
     ray.init(ignore_reinit_error=True)
+    # config_hier["multiagent"]["policies_to_train"] = ["high_level_policy"]
     resources = PPOTrainer.default_resource_request(config_hier).to_json()
     tune.run(
         train,
         name="HWalk_Hier_Mimic",
         # resume=resume,
-        restore="/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
+        restore="/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name_hier,
             experiment_id_hier,
+            checkpoint_num_hier,
             checkpoint_num_hier,
             checkpoint_num_hier,
         )
         if resumeFromCheckpoint
         else "",
-        checkpoint_at_end=True,
-        checkpoint_freq=10,
-        checkpoint_score_attr="episode_reward_mean",
         stop={"episode_reward_mean": 10000},
         config=config_hier,
-        resources_per_trial=resources,
+        resources_per_trial=resources
     )

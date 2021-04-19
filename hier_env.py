@@ -484,6 +484,11 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         _, _, yaw = self.flat_env.robot.robot_body.pose().rpy()
         newDegree = np.interp(actionDegree, [-180, 180], [-45, 45]) + np.rad2deg(yaw)
         self.highLevelDegTarget = np.deg2rad(newDegree)
+
+        # Aktifkan jika ingin mengecek apakah policy dari low level env berhasil di import
+        # vRobotTargetEnd = self.target - self.robot_pos
+        # self.highLevelDegTarget = np.arctan2(vRobotTargetEnd[1], vRobotTargetEnd[0])
+
         cosTarget, sinTarget = np.cos(self.highLevelDegTarget), np.sin(
             self.highLevelDegTarget
         )
@@ -536,7 +541,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
             self.aliveReward,
         ]
 
-        rewardWeight = [0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0.1]
+        rewardWeight = [0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.1]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):

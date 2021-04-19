@@ -8,6 +8,8 @@ from ray.tune import function
 from ray.rllib.agents.ppo import PPOTrainer
 from ray.tune.registry import register_env
 
+from train_config import config_hier, config_low, single_env
+from collections import OrderedDict
 
 def drawLine(c1, c2, color):
     return pybullet.addUserDebugLine(c1, c2, lineColorRGB=color, lineWidth=5, lifeTime=0.1)
@@ -31,88 +33,50 @@ def drawText(text, pos, color, lifeTime):
         text, pos, textColorRGB=color, textSize=2, lifeTime=lifeTime
     )
 
-
-def make_env_hier(env_config):
-    import pybullet_envs
-
-    return HierarchicalHumanoidEnv()
-
-def policy_mapping_fn(agent_id):
-    if agent_id.startswith("low_level_"):
-        return "low_level_policy"
-    else:
-        return "high_level_policy"
-
 if __name__ == "__main__":
     ray.shutdown()
     ray.init(ignore_reinit_error=True)
 
     single_env = HierarchicalHumanoidEnv()
 
-    ENV_HIER = "HumanoidBulletEnvHier-v0"
-    register_env(ENV_HIER, make_env_hier)
-    highLevelPolicy = (
-        None,
-        single_env.high_level_obs_space,
-        single_env.high_level_act_space,
-        {
-            "model": {
-                "fcnet_hiddens": [512, 256],
-                "fcnet_activation": "tanh",
-                "free_log_std": False,
-            },
-        },
-    )
-
-    lowLevelPolicy = (
-        None,
-        single_env.low_level_obs_space,
-        single_env.low_level_act_space,
-        {
-            "model": {
-                "fcnet_hiddens": [1024, 512],
-                "fcnet_activation": "tanh",
-                "free_log_std": True,
-            },
-        },
-    )
-
-    config = {
-        "env": ENV_HIER,
-        "num_workers": 0,
-        "num_envs_per_worker": 1,
-        "multiagent": {
-            "policies": {
-                "high_level_policy": highLevelPolicy,
-                "low_level_policy": lowLevelPolicy,
-            },
-            "policy_mapping_fn": function(policy_mapping_fn),
-        },
-        "log_level": "WARN",
-        "num_gpus": 1,
-        "monitor": True,
-        "evaluation_num_episodes": 50,
-        "gamma": 0.995,
-        "lambda": 0.95,
-        "clip_param": 0.2,
-        "kl_coeff": 1.0,
-        "num_sgd_iter": 20,
-        "lr": 0.0005,
-        "sgd_minibatch_size": 12000,
-        "train_batch_size": 36000,
-        "batch_mode": "complete_episodes",
-        "observation_filter": "NoFilter",
-    }
-
-    agent = PPOTrainer(config)
+    
+    agent = PPOTrainer(config_hier)
     experiment_name = "HWalk_Hier_Mimic"
-    experiment_id = "PPO_HumanoidBulletEnvHier-v0_3b65d_00000_0_2021-04-19_15-24-09"
-    checkpoint_num = "840"
+    experiment_id = "train_HumanoidBulletEnvHier-v0_41476_00000_0_2021-04-19_23-52-33"
+    checkpoint_num = "10"
     agent.restore(
-        "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
-            experiment_name, experiment_id, checkpoint_num, checkpoint_num
+        "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint_{}/checkpoint-{}".format(
+            experiment_name, experiment_id, checkpoint_num, checkpoint_num, checkpoint_num
         )
     )
+
+    # experiment_name = "HWalk_Low_Mimic"
+    # experiment_id = "PPO_HumanoidBulletEnvLow-v0_699c9_00000_0_2021-04-18_22-14-39"
+    # checkpoint_num = "1930"
+
+    # config_low["num_workers"] = 0
+    # config_low["num_envs_per_worker"] = 1
+    # config_low["num_gpus"] = 1
+    # agentLow = PPOTrainer(config_low)
+    # agentLow.restore(
+    #     "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
+    #         experiment_name, experiment_id, checkpoint_num, checkpoint_num
+    #     )
+    # )
+    # lowWeight = agentLow.get_policy().get_weights()
+    # highWeight = agent.get_policy("low_level_policy").get_weights()
+    # lowState = agentLow.get_policy().get_state()
+    # importedOptState = OrderedDict(
+    #     [
+    #         (k.replace("default_policy", "low_level_policy"), v)
+    #         for k, v in lowState["_optimizer_variables"].items()
+    #     ]
+    # )
+    # importedPolicy = {
+    #     hw: lowWeight[lw] for hw, lw in zip(highWeight.keys(), lowWeight.keys())
+    # }
+    # importedPolicy["_optimizer_variables"] = importedOptState
+    # agent.get_policy("low_level_policy").set_state(importedPolicy)
 
     env = HierarchicalHumanoidEnv()
 

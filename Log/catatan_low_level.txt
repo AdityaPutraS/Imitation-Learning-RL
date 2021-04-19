@@ -1,0 +1,376 @@
+PPO_HumanoidBulletEnv-v0-Low_c0e9e_00000_0_2021-03-23_13-00-57 => rewardWeight = [1, 0.1, 0.1, 0]
+
+PPO_HumanoidBulletEnv-v0-Low_e66ec_00000_0_2021-03-23_17-55-29 => Ganti koef exp deltaJoints jadi -5, koef endpoint jadi -3, weight reward [1, 0.05, 1], learning rate 0.0001
+
+PPO_HumanoidBulletEnv-v0-Low_6a5d5_00000_0_2021-03-23_20-29-30 => Fix endpoint, ganti rumus jadi 2 * e^(-10x) dengan x = weighted avg endpoint, frame skip = 5 ==> Hasilnya robot berjalan tapi seperti menahan suatu pose selama bbrp detik, kemudian lanjut berjalan (hipotesis: mungkin karena frame skip 5, jadi robot berusaha mencapai 5 frame berikutnya & itu memakan waktu cukup lama)
+
+PPO_HumanoidBulletEnv-v0-Low_32439_00000_0_2021-03-23_22-15-18 => sama seperti sebelumnya, tapi frame skip = 1 ==> Hasilnya robot berjalan, lebih cepet dari sebelumnya, tapi mungkin terlalu cepat sehingga kurang stabil, frame skip sepertinya harus dinaikan menjadi 2 / 3
+
+Note: Sepertinya tidak ada reward jika robot mengikuti target
+Note untuk 24 Maret 2021:
+	- Coba ganti frame skip jadi 2 / 3
+	- Ganti base env menjadi flagrun humanoid
+	- Ganti endpoint calc agar yaw nya sesuai dengan flagrun (puter setiap vektor sendi sebanyak theta derajat pada sumbu z, theta didapat dari np.arctan2(walk_target_y, walk_target_x), perhitungan rotasi bisa pakai Rotation class dari scipy)
+	- Pastikan walk target bisa di infer dari state low level 
+	
+==========================================================================
+Low level di fixed inc framenya
+
+PPO_HumanoidBulletEnv-v0-Low_e9c88_00000_0_2021-03-28_20-34-17:
+	update:
+		fix inc frame ( =+ menjadi += )
+		ganti observation jadi sama dengan hierarchical env
+		randomize target
+		randomize yaw awal robot
+		randomize posisi awal robot
+		tambah reward untuk target
+		ganti referensi dari 08_01 jadi 08_03 karena lebih stabil
+		ganti max frame jadi 125 (siklus 08_03 dari 0 - 125)
+		ganti perhitungan endpoint jadi diputar dulu sebanyak yaw target, baru dihitung endpoint scorenya
+		ganti weigh reward dari [1, 0.1, 1, 0] menjadi [1, 0.2, 2, 1, 0]
+		ganti syarat delta joint dan delta endpoint dari 0.5 => 0.15
+		inc frame menjadi 1
+		ganti rumus low level target jadi exp(-5 delta)
+		hapus 2* dari rumus low level dan endpoint reward, sebagai gantinya atur di weight reward
+	global update:
+		num worker 6 => 5
+		num env per worker 5 => 10
+		lr 0.0005 => 0.0001
+		simpan semua checkpoint
+	hasil: bisa jalan, kaki kiri kaku, tidak bisa mencapai target
+	
+PPO_HumanoidBulletEnv-v0-Low_129ac_00000_0_2021-03-29_00-53-08:
+	update:
+		ganti rumus target low level dari exp(-2*) menjadi exp(-1*)
+		ganti weight dari [1, 0.2, 2, 1, 0] jadi [0.125, 0.25, 0.25, 0.375, 0.0] (idenya agar jumlah nya 1)
+		ganti syarat end point dari 0.15 => 0.09
+		ganti random progression dari 0.8 => 0.5
+		ganti random x dari 0 s/d 20 => -20 s/d 20
+		fix typo perhitungan low level target (targetHighLevel - robotPos menjadi targetHighLevel = robotPos)
+		randomize target lagi jika robot sudah dekat dengan target
+	global update:
+		
+	hasil: sudah bisa jalan, kaki kanan kaku, agak ragu apakah bisa mengejar target / tidak
+	
+PPO_HumanoidBulletEnvLow-v0_a06bc_00000_0_2021-03-29_07-45-07:
+	update:
+		syarat endpoint 0.09 => 0.5
+		syarat delta joint 0.15 => 0.5
+		syarat frame update 10 => 20
+		max timestep ditaruh di low level env, diset dari 1000 => 2000
+	global update:
+		
+	hasil: Jalan stepnya sangat kecil, berputar putar tidak mencapai target
+	
+
+=============================================================
+		WEIRD BEHAVIOR, SKIP THIS	
+PPO_HumanoidBulletEnvLow-v0_a2b7e_00000_0_2021-03-29_14-26-03
+PPO_HumanoidBulletEnvLow-v0_762b5_00000_0_2021-03-29_16-33-39
+=============================================================
+
+PPO_HumanoidBulletEnvLow-v0_d6595_00000_0_2021-03-29_21-58-28:
+	update:
+		
+	global update:
+		num worker 5 => 6
+		sgd minibatch 8000 => 4000
+		train batch 24000 => 12000
+	hasil: nemu loophole, aneh jadinya
+	
+PPO_HumanoidBulletEnvLow-v0_1d5cf_00000_0_2021-03-31_20-25-01:
+	update:
+		ganti rumus end point reward, diriset di geogebra dan di cocokan ke kode
+		abdomen robot di fix ke sudut [0, 0, 0] saat reset
+		weight reward menjadi [0.15, 0.25, 0.35, 0.25, 0]
+	global update:
+		sgd minibatch balik jadi 8000
+		train batch balik jadi 24000
+	hasil: To Be Checked
+	
+PPO_HumanoidBulletEnvLow-v0_a1aa5_00000_0_2021-04-01_06-51-29:
+	update:
+		skip frame jadi 10
+		reward weight jadi [0.5, 1, 1, 0.1, 0.0]
+	global update:
+	
+	hasil: Tidak bisa jalan
+	
+PPO_HumanoidBulletEnvLow-v0_2a829_00000_0_2021-04-01_13-57-39:
+	update:
+		skip frame jadi 5
+		fix delta target di observation
+		tambah end point target ke observation
+	global update:
+	
+	hasil: Tidak bisa jalan
+	
+PPO_HumanoidBulletEnvLow-v0_159e6_00000_0_2021-04-01_17-17-30 & PPO_HumanoidBulletEnvLow-v0_ee8b2_00000_0_2021-04-01_19-32-25:
+	update:
+		hapus reward end point
+		observation dari end point jadi joint
+		ubah rumus perhitungan reward joint
+	global update:
+	
+	hasil: diam di tempat, menahan posisi
+	
+PPO_HumanoidBulletEnvLow-v0_7a341_00000_0_2021-04-02_14-13-01:
+	update:
+		kembalikan sistem frame update cnt
+	global update:
+		log variable frame di callback
+	hasil: Tidak bisa jalan, belum di evaluasi lebih lanjut
+	
+PPO_HumanoidBulletEnvLow-v0_9228e_00000_0_2021-04-02_19-28-39:
+	update:
+		hilangkan random target dan yaw
+		skipframe 1 => 2
+	global update:
+		layer [256, 128, 64] => [512, 256, 128, 64]
+		num worker 2010=> 15
+		lr 0.0001 => 0.0005
+		
+	hasil: Skip
+
+
+===================================================
+Tambah score joint velocity
+==================================================
+PPO_HumanoidBulletEnvLow-v0_38d43_00000_0_2021-04-02_23-51-00
+PPO_HumanoidBulletEnvLow-v0_a7a77_00000_0_2021-04-03_05-52-01:
+	update:
+		tambah score joint velocity
+		init velocity di set joint orientation
+		always skip frame
+	global update:
+		layer [512, 256, 128, 64] => [1024, 512]
+		
+	hasil: jalan pincang
+	
+PPO_HumanoidBulletEnvLow-v0_db060_00000_0_2021-04-03_23-18-34:
+	update:
+		skipframe 2 => 1
+		end point score e^-1*..... * 3 -1.8 => e^-2*..... * 3 - 1.6
+		reward weight [0.25, 0.25, 0.25, 0.25, 0.1, 0] => [1, 0.25, 0.25, 0.25, 0.1, 0]
+	global update:
+		observation filter MeanStdFilter => NoFilter
+	hasil: Bisa jalan dan melangkah, best sejauh ini
+	
+PPO_HumanoidBulletEnvLow-v0_70ffd_00000_0_2021-04-04_06-32-15:
+	update:
+		randomize init position
+		randomize target
+		randomize yaw
+		reward lowtargetscore dari 0.1 => 0.5
+	global update:
+		
+	hasil: TO BE CHECKED
+	
+PPO_HumanoidBulletEnvLow-v0_ae137_00000_0_2021-04-04_11-20-17:
+	update:
+		remove randomize init position, target, yaw
+		reward lowtargetscore 0.5 => 0.1
+		ganti reference dari walk08_03 => walk09_01 (benernya run)
+	global update:
+		
+	hasil: Bisa jalan, paha sangat terangkat, lumayan bagus
+	
+PPO_HumanoidBulletEnvLow-v0_57be8_00000_0_2021-04-05_17-36-05
+PPO_HumanoidBulletEnvLow-v0_6cf2b_00000_0_2021-04-05_18-05-18:
+	update:
+		weight base reward 1 => 0
+		tambah alive reward
+	global update:
+		
+	hasil: sepertinya butuh learning lebih lama
+	
+PPO_HumanoidBulletEnvLow-v0_94b02_00000_0_2021-04-05_20-08-06:
+	update:
+		ganti motion jadi lompat
+	global update:
+		
+	hasil: gagal lompat
+	
+PPO_HumanoidBulletEnvLow-v0_c2257_00000_0_2021-04-06_09-45-25:
+	update:
+		ganti motion jadi walk08_03 lagi
+		max timestep jadi 3000
+		reset yaw dinyalakan
+		weight reward alive 1 => 0
+		weight base reward  0 => 1
+	global update:
+		sgd minibatch 8000 => 12000
+		train batch 24000 => 36000
+	hasil: sama kaya yang sebelumnya, bisa jalan, langkah besar
+	
+
+-------------------------
+Fix bug random init target
+-------------------------
+
+PPO_HumanoidBulletEnvLow-v0_70421_00000_0_2021-04-06_20-05-54:
+	update:
+		randomize target jadi -500 s/d 500
+	global update:
+		
+	hasil: jalan hanya 2 langkah saja
+	
+=================================================================+BATAS HAPUS+============================================================================
+	
+PPO_HumanoidBulletEnvLow-v0_84a7a_00000_0_2021-04-12_17-43-21:
+	update:
+		max frame jadi len(joint df)
+		tambah variable robot_pos
+		starting_ep_pos di reset setiap frame mencapai max_frame
+		atur ulang cara randomize target dan posisi awal robot
+		assign target ke flat_env.robot.walk_target juga, sebelumnya hanya flat_env.walk_target saja
+		perhitungan end point score menggunakan starting ep pos
+		hapus low target score
+		tidak menggunakan alive dan jump score
+		modif fungsi check target agar randomize target benar
+		reward weight [1, 0.25, 0.25, 0.1] => [0.5, 0.25, 0.25, 0.5]
+	global update:
+		
+	hasil: Jalan hanya dengan 1 kaki, gagal mencari target
+	
+PPO_HumanoidBulletEnvLow-v0_e7987_00000_0_2021-04-12_21-35-11:
+	update:
+		reassign high level target dan walk target setiap saat, bukan saat reset dan saat dekat tujuan saja
+	global update:
+		minibatch size 12000 -> 8000
+		train batch size 36000 -> 24000
+		
+	hasil: hanya melangkah dengan 1 kaki, tidak bisa jalan dan mencapai target
+	penyebab: end point tidak memakai yang normalized
+	
+PPO_HumanoidBulletEnvLow-v0_abc41_00000_0_2021-04-13_08-46-23:
+	update:
+		randomize frame awal
+		ganti dataset endpoint menjadi yang normalized
+		ganti rumus endpoint 3 * e^(-2 * mean end point) - 1.6 menjadi
+			2 * e^(-10 * mean end point)
+		weight foot endpoint 3 => 0.5
+		
+		New update:
+			Sudah 6 jam training tapi robot tidak melangkah:
+				weight foot 0.5 => 3
+			retrain
+	global update:
+	
+	hasil: Diam di tempat
+	
+PPO_HumanoidBulletEnvLow-v0_1bb4c_00000_0_2021-04-14_02-21-47:
+	update:
+		endpoint score di map ke -0.5 s/d 0.5 dengan menambah -0.5 di akhir rumus
+		joint score juga, dengan mengubah -1.8 jadi -2.3
+		weight endpoint score 0.1 => 0.25
+		tambah lowtargetscore dengan weight 0.1
+		ganti dataset endpoint menjadi non normalized
+		ganti metode reset agar starting end pos sesuai dengan frame saat mulai
+			jika starting end pos tidak disesuaikan, dan frame random saat mulai, maka bisa jadi score endpoint sangat kecil saat baru mulai karena end point awal sangat jauh dr endpoint sebenarnya jika frame nya akhir akhir
+		panjang walk target di set menjadi targetHighLevelLen - (targetLen - distTargetRobot), karena flat env memberi hadiah berdasar potensi, yang berdasar jarak dengan target/dt, jadi kalau jaraknya konstan 1e3, potensinya tidak berubah ubah
+	global update:
+		minibatch size 8000 -> 12000
+		train batch size 24000 -> 36000
+	hasil: bisa jalan, mengejar target, tapi ketika belok sangat jauh tiba tiba, maka akan jatuh
+	
+PPO_HumanoidBulletEnvLow-v0_94516_00000_0_2021-04-14_16-44-09:
+	update:
+		ganti reference 08_03 => 09_03 (jalan jadi lari)
+	global update:
+		
+	hasil: bisa jalan, mengejar target, gerakan cepat, tapi tidak terlihat seperti berlari
+
+PPO_HumanoidBulletEnvLow-v0_3bd42_00000_0_2021-04-15_21-48-18:
+	note:	
+		Ini merupakan restore train dari PPO_HumanoidBulletEnvLow-v0_94516_00000_0_2021-04-14_16-44-09
+	update:
+		low target score ada tambahan self.target_reassigned_cnt, idenya jika robot mencapai target, nilai low target score tidak reset lagi ke 0, tapi lanjut dari sebelumnya
+		reset yaw diaktifkan, yaw direset random -180 s/d 180
+		saat target ganti, target mungkin -180 s/d 180 derajat , bukan -90 s/d 90 lagi
+	global update:
+		vf clip param 10 => 50, gunanya untuk mengscale reward, di implementasinya, batas atasnya jika reward/vf_clip_param >= 200 maka akan lama konvergennya
+	hasil: aneh, kadang jalan, kadang jatuh
+	
+PPO_HumanoidBulletEnvLow-v0_84e4e_00000_0_2021-04-17_10-42-15
+PPO_HumanoidBulletEnvLow-v0_a824e_00000_0_2021-04-17_13-42-11:
+	note:	
+		train 2 kali, 1 dengan reset yaw 0, random target +-45
+		eksperimen 2 kali, 1 dengan skipframe naik jadi 2, 1 dengan frame update cnt
+	update:
+		walk target di batasi maksimal sudutnya (+- 45 derajat), jika walk target melebihi itu, maka walk target akan di assign +- 45 derajat
+		garis target digambar dari target ke target, bukan dari robot ke target lagi saat target berganti
+		menambah debug robot pos line yang menggambar jalur robot pada setiap saat
+	global update:
+		vf clip param 50 => 10 (kembali ke default)
+	hasil: 
+		eksperimen 1: skip frame = 2
+			dengan reset yaw 0: PPO_HumanoidBulletEnvLow-v0_84e4e_00000_0_2021-04-17_10-42-15
+				Jalan dengan 1 kaki saja yang maju ke depan
+			
+			dengan random reset dan target: PPO_HumanoidBulletEnvLow-v0_a824e_00000_0_2021-04-17_13-42-11
+				Masih jalan dengan kaki, bisa belok dan mengejar target
+		eksperimen 2: dengan frame update cnt
+		TERMINATED, lanjut ke ide eksperimen selanjutnya
+			dengan reset yaw 0:
+			
+			dengan random reset dan target:
+			
+=============================
+Next idea:
+	Daripada menggunakan delta endpoint, joint, velocity, sebaiknya reward menjadi delta dari delta endpoint, joint, velocity. Konsepnya sama seperti potential pada flat env dimana reward diberikan dari delta(delta kedekatan robot dengan target), bukan delta kedekatan robot dengan target saja. Dengan hal tersebut, jika robot tidak mengimprove dirinya, delta dari delta tersebut akan berinlai 0, sementara jika berubah menjadi lebih buruk, akan menjadi negatif. Ini mungkin dapat mengatasi masalah robot fine fine saja dengan reward negatif pada delta endpoint, joint, velocity
+============================
+
+PPO_HumanoidBulletEnvLow-v0_88ad4_00000_0_2021-04-17_17-23-13 (08_03)
+PPO_HumanoidBulletEnvLow-v0_2d14e_00000_0_2021-04-18_11-07-14 (09_03):
+	note:	
+		self.delta_deltaJoints = (jointScore - self.deltaJoints) / 0.0165
+		self.delta_deltaVelJoints = (jointVelScore - self.deltaVelJoints) / 0.0165 * 0.1
+		self.delta_deltaEndPoints = (endPointScore - self.deltaEndPoints) / 0.0165
+		self.delta_lowTargetScore = (lowTargetScore - self.lowTargetScore) / 0.0165
+		rewardWeight = [0.2, 0.1, 0.1, 0.1, 0.2] => 08_03
+		perhitungan reward = -delta/sum weight, tidak menggunakan exp lagi
+		
+		09_03 di train dari 08_03
+	update:
+		reward menjadi delta reward, lihat next idea diatas
+		
+		
+	global update:
+		
+	hasil: bisa jalan, kurang terlihat bisa mengejar target, mungkin harus ditrain dengan random yaw dan target
+	
+PPO_HumanoidBulletEnvLow-v0_f8215_00000_0_2021-04-18_16-56-31:
+	note:	
+		
+	update:
+		weight base reward = 0
+		tambah electricity reward, joint limit reward
+		kembalikan alive reward
+		weight reward jadinya
+			reward = [
+			    self.baseReward,
+			    self.delta_deltaJoints,
+			    self.delta_deltaVelJoints,
+			    self.delta_deltaEndPoints,
+			    self.delta_lowTargetScore,
+			    self.electricityScore,
+			    self.jointLimitScore,
+			    self.aliveReward,
+			]
+			rewardWeight = [0, 0.1, 0.1, 0.1, 0.2, 0.2, 0.2, 0.1]
+		add electricity & joint limit reward di custom callback
+	global update:
+		
+	hasil: Cukup unik, robot bergerak dengan melompat ke depan, hanya 1 lompat saja tapi, mungkin butuh train lebih lama (baru train 4,5 jam)
+
+PPO_HumanoidBulletEnvLow-v0_699c9_00000_0_2021-04-18_22-14-39:
+	note:	
+		
+	update:
+		robot body memiliki velocity awal, sesuai dengan perhitungan dari bvh
+		step menggunakan sendiri, tidak menggunakan flat env
+		perhitungan done berdasar alive reward, done jika alive reward < 0, artinya z robot <= 0.5
+	global update:
+		
+	hasil: Robot berjalan cepat, mengejar target, bagus
