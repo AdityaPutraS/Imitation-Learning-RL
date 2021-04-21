@@ -42,8 +42,8 @@ if __name__ == "__main__":
     
     agent = PPOTrainer(config_hier)
     experiment_name = "HWalk_Hier_Mimic"
-    experiment_id = "train_HumanoidBulletEnvHier-v0_41476_00000_0_2021-04-19_23-52-33"
-    checkpoint_num = "10"
+    experiment_id = "train_HumanoidBulletEnvHier-v0_ad955_00000_0_2021-04-20_13-24-28"
+    checkpoint_num = "270"
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name, experiment_id, checkpoint_num, checkpoint_num, checkpoint_num

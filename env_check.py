@@ -7,6 +7,8 @@ import ray
 from ray.rllib.agents.ppo import PPOTrainer
 from ray.tune.registry import register_env
 
+from train_config import config_low
+
 
 def drawLine(c1, c2, color):
     return pybullet.addUserDebugLine(c1, c2, lineColorRGB=color, lineWidth=5, lifeTime=0.1)
@@ -30,49 +32,14 @@ def drawText(text, pos, color, lifeTime):
         text, pos, textColorRGB=color, textSize=2, lifeTime=lifeTime
     )
 
-
-def make_env_low(env_config):
-    import pybullet_envs
-
-    return LowLevelHumanoidEnv()
-
-
 if __name__ == "__main__":
     ray.shutdown()
     ray.init(ignore_reinit_error=True)
 
-    ENV_LOW = "HumanoidBulletEnv-v0-Low"
-    register_env(ENV_LOW, make_env_low)
-    config_low = {
-        "env": ENV_LOW,
-        "num_workers": 0,
-        "num_envs_per_worker": 1,
-        "log_level": "WARN",
-        "num_gpus": 1,
-        "monitor": True,
-        "evaluation_num_episodes": 50,
-        "gamma": 0.995,
-        "lambda": 0.95,
-        "clip_param": 0.2,
-        "kl_coeff": 1.0,
-        "num_sgd_iter": 20,
-        "lr": 0.0005,
-        "sgd_minibatch_size": 8000,
-        "train_batch_size": 24000,
-        "model": {
-            "fcnet_hiddens": [1024, 512],
-            "fcnet_activation": "tanh",
-            "free_log_std": True,
-        },
-        "batch_mode": "complete_episodes",
-        "observation_filter": "NoFilter",
-        "framework": "tf",
-    }
-
     agent = PPOTrainer(config_low)
     experiment_name = "HWalk_Low_Mimic"
-    experiment_id = "PPO_HumanoidBulletEnvLow-v0_699c9_00000_0_2021-04-18_22-14-39"
-    checkpoint_num = "1930"
+    experiment_id = "PPO_HumanoidBulletEnvLow-v0_71287_00000_0_2021-04-21_08-35-16"
+    checkpoint_num = "3700"
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name, experiment_id, checkpoint_num, checkpoint_num
@@ -97,11 +64,15 @@ if __name__ == "__main__":
         print("Deg obs: ", degObs)
         # print(env.target, env.targetHighLevel)
         drawAxis()
-        pause = False
+        pause = True
+        r, p, y = env.flat_env.robot.robot_body.pose().rpy()
+        print(r, p, y)
         while not done and not doneAll:
             if (not pause):
                 action = agent.compute_action(observation)
-                observation, reward, done, info = env.step(action)
+                observation, reward, f_done, info = env.step(action)
+                # r, p, y = env.flat_env.robot.robot_body.pose().rpy()
+                # print(r, p, y - env.highLevelDegTarget)
             # print(env.lowTargetScore)
             # Garis dari origin ke target akhir yang harus dicapai robot
             # drawLine([0, 0, 0], env.target, [0, 1, 0])
@@ -112,11 +83,12 @@ if __name__ == "__main__":
             # drawLine([0, 0, 0], robotPos, [1, 1, 1])
 
             # Garis dari robot ke walk target environment
-            drawLine(robotPos, robotPos + env.targetHighLevel, [0, 0, 0])
+            vHighTarget = np.array([np.cos(env.highLevelDegTarget), np.sin(env.highLevelDegTarget), 0]) * 10
+            drawLine(robotPos, robotPos + vHighTarget, [0, 0, 0])
 
             # drawLine(env.starting_ep_pos + np.array([0, 0, 1]), robotPos + env.targetHighLevel, [0, 0, 1])
 
-            # drawLine(robotPos, [env.flat_env.robot.walk_target_x, env.flat_env.robot.walk_target_y, 0], [0, 0, 1])
+            drawLine(robotPos, [env.flat_env.robot.walk_target_x, env.flat_env.robot.walk_target_y, 0], [0, 0, 1])
             # print(observation)
             # drawText(str(env.frame), env.flat_env.parts["lwaist"].get_position() + np.array([0, 0, 1]), [0, 1, 0], 1.0/30)
             # drawText(str(env.deltaJoints), env.flat_env.parts["lwaist"].get_position() + np.array([1, 0, 1]), [1, 0, 0], 1.0/30)

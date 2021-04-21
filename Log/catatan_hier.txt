@@ -134,7 +134,9 @@ PPO_HumanoidBulletEnvHier-v0_7bd7f_00000_0_2021-04-11_09-08-54:
 	global update:
 		ganti sistem resume => restore dari checkpoint tertentu
 	hasil: Berjalan tapi hanya 2 langkah,mungkin karena high level masih ngawur dalam memilih
-
+======================================================================
+BATAS HAPUS
+=====================================================================
 PPO_HumanoidBulletEnvHier-v0_66b0b_00000_0_2021-04-11_16-39-16
 PPO_HumanoidBulletEnvHier-v0_d6128_00000_0_2021-04-12_06-32-45:
 	update:
@@ -155,6 +157,7 @@ Policy low level di import dari low level env
 note: train harus 2 kali, pertama harus di train minimal 1 iterasi, kemudian di load checkpoint
 baru bisa mengimport hasil dari low level
 =====================================================
+train_HumanoidBulletEnvHier-v0_41476_00000_0_2021-04-19_23-52-33 (BASE)
 train_HumanoidBulletEnvHier-v0_03457_00000_0_2021-04-19_23-57-59
 train_HumanoidBulletEnvHier-v0_57cd8_00000_0_2021-04-20_00-21-49:
 	note:
@@ -176,5 +179,34 @@ train_HumanoidBulletEnvHier-v0_57cd8_00000_0_2021-04-20_00-21-49:
 		starting ep pos di re calculate tiap high level step
 	global update:
 	
-	hasil: (23-57-59) 
-		(00-21-49)
+	hasil: (00-21-49) Gagal mencari target, masih bisa jalan, kadang bisa mengejar, tapi overall gagal
+	
+train_HumanoidBulletEnvHier-v0_03457_00000_0_2021-04-19_23-57-59 (BASE)
+train_HumanoidBulletEnvHier-v0_57cd8_00000_0_2021-04-20_00-21-49
+train_HumanoidBulletEnvHier-v0_50898_00000_0_2021-04-20_07-59-44
+train_HumanoidBulletEnvHier-v0_ad955_00000_0_2021-04-20_13-24-28:
+	note:
+		sumber asal dari train_HumanoidBulletEnvHier-v0_03457_00000_0_2021-04-19_23-57-59
+	update:
+		randomize yaw -180 s/d 180
+		randomize target -180 s/d 180
+		episode langsung done jika jarak robot dan target > targetLen+1
+		syarat ganti target berubah dari dist <= 1 menjadi dist <= 0.5
+		batas highLevelDegTarget berubah dari -45 s/d 45 menjadi -90 s/d 90
+		(11-58-43) reward high level menjadi delta_highScore * step per level + cumulative alive reward, cumulative alive reward di reset setiap high level dapat reward
+	global update:
+	
+	hasil:	(00-21-49) Gagal mencari target, masih bisa jalan, kadang bisa mengejar, tapi overall gagal
+		(07-59-44) Terkadang high level memberi arah ke target, tapi lebih sering tidak
+		(13-24-28) Low level sudah lumayan mengejar target, high level masih jelek
+==> Kembali ke low level untuk di train ulang
+
+train_HumanoidBulletEnvHier-v0_61e86_00000_0_2021-04-21_15-51-29 (BASE)
+train_HumanoidBulletEnvHier-v0_906d4_00000_0_2021-04-21_15-52-47:
+	note:
+		low level model dari PPO_HumanoidBulletEnvLow-v0_71287_00000_0_2021-04-21_08-35-16 iterasi 3700
+	update:
+		tambah body posture reward untuk low level
+	global update:
+	
+	hasil: (15-52-47)

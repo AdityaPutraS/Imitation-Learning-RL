@@ -63,18 +63,18 @@ config = {
 }
 
 experiment_name = "HWalk_Low_Mimic"
-experiment_id = "PPO_HumanoidBulletEnvLow-v0_f8215_00000_0_2021-04-18_16-56-31"
-checkpoint_num = "930"
+experiment_id = "PPO_HumanoidBulletEnvLow-v0_f91f5_00000_0_2021-04-20_18-55-52"
+checkpoint_num = "3510"
 
-resume = False
+resume = True
 
 tune.run(
     PPOTrainer,
     name="HWalk_Low_Mimic",
-    resume=True,
-    # restore="/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
-    #     experiment_name, experiment_id, checkpoint_num, checkpoint_num
-    # ) if resume else "",
+    # resume=resume,
+    restore="/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
+        experiment_name, experiment_id, checkpoint_num, checkpoint_num
+    ) if resume else "",
     checkpoint_at_end=True,
     checkpoint_freq=10,
     checkpoint_score_attr="episode_reward_mean",

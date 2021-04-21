@@ -374,3 +374,16 @@ PPO_HumanoidBulletEnvLow-v0_699c9_00000_0_2021-04-18_22-14-39:
 	global update:
 		
 	hasil: Robot berjalan cepat, mengejar target, bagus
+
+PPO_HumanoidBulletEnvLow-v0_f91f5_00000_0_2021-04-20_18-55-52
+PPO_HumanoidBulletEnvLow-v0_71287_00000_0_2021-04-21_08-35-16:
+	note:	
+		(18-55-52) Ditrain tidak dari awal, tapi menggunakan weight dari PPO_HumanoidBulletEnvLow-v0_699c9_00000_0_2021-04-18_22-14-39
+		ganti highLevelTarget vector menjadi highLevelDegTarget yang merupakan sudut
+		tambah reward bodyPosture yang mengukur seberapa tegak robot dan apakah yaw nya mengikuti highLevelDegTarget atau tidak
+		lepas batasan highLevelDegTarget untuk robot
+		(08-35-16) Ditrain dari (18-55-52) iterasi ke 3510, reward diganti menjadi bentuk exp nya
+	global update:
+		
+	hasil:	(18-55-52) Bisa jalan, bisa berputar 180 derajat, bisa mengejar target, masih belum bisa jika ada 2 perubahan arah yang ekstrim secara tiba tiba
+		(08-35-16) Sangat bagus, jalan stabil, kaki tidak terlalu lebar langkahnya, postur tegak, bisa mengejar target, bisa berputar 180 derajat

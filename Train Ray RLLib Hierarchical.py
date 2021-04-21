@@ -26,13 +26,13 @@ from ray.tune import CLIReporter
 import os
 
 experiment_name = "HWalk_Low_Mimic"
-experiment_id = "PPO_HumanoidBulletEnvLow-v0_699c9_00000_0_2021-04-18_22-14-39"
-checkpoint_num = "1930"
+experiment_id = "PPO_HumanoidBulletEnvLow-v0_71287_00000_0_2021-04-21_08-35-16"
+checkpoint_num = "3700"
 
 
 experiment_name_hier = "HWalk_Hier_Mimic"
-experiment_id_hier = "train_HumanoidBulletEnvHier-v0_03457_00000_0_2021-04-19_23-57-59"
-checkpoint_num_hier = "50"
+experiment_id_hier = "train_HumanoidBulletEnvHier-v0_61e86_00000_0_2021-04-21_15-51-29"
+checkpoint_num_hier = "1"
 
 resumeFromCheckpoint = True
 useModelFromLowLevelTrain = False
@@ -44,6 +44,8 @@ def train(config, checkpoint_dir=None):
     if checkpoint_dir:
         trainer.load_checkpoint(checkpoint_dir)
         
+    chk_freq = 10
+    
     if useModelFromLowLevelTrain:
         config_low["num_workers"] = 0
         config_low["num_envs_per_worker"] = 1
@@ -67,9 +69,9 @@ def train(config, checkpoint_dir=None):
             hw: lowWeight[lw] for hw, lw in zip(highWeight.keys(), lowWeight.keys())
         }
         importedPolicy["_optimizer_variables"] = importedOptState
-        trainer.get_policy("low_level_policy").set_state(importedPolicy)      
+        trainer.get_policy("low_level_policy").set_state(importedPolicy)
+        chk_freq = 1 # Hanya perlu 1 kali saja di awal untuk save model hasil import   
 
-    chk_freq = 10
     
     while True:
         result = trainer.train()
@@ -81,7 +83,7 @@ def train(config, checkpoint_dir=None):
 
 if __name__ == "__main__":
     ray.init(ignore_reinit_error=True)
-    # config_hier["multiagent"]["policies_to_train"] = ["high_level_policy"]
+    config_hier["multiagent"]["policies_to_train"] = ["high_level_policy"]
     resources = PPOTrainer.default_resource_request(config_hier).to_json()
     tune.run(
         train,
