@@ -18,7 +18,7 @@ from ray.rllib.env import MultiAgentEnv
 from low_level_env import LowLevelHumanoidEnv
 
 from scipy.spatial.transform import Rotation as R
-from math_util import rotFrom2Vec
+from math_util import rotFrom2Vec, projPointLineSegment
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +30,9 @@ def getJointPos(df, joint, multiplier=1):
     return np.array([x, y, z]) * multiplier
 
 
-def drawLine(c1, c2, color, lifeTime=0.1):
+def drawLine(c1, c2, color, lifeTime=0.1, width=5):
     return pybullet.addUserDebugLine(
-        c1, c2, lineColorRGB=color, lineWidth=5, lifeTime=lifeTime
+        c1, c2, lineColorRGB=color, lineWidth=width, lifeTime=lifeTime
     )
 
 
@@ -55,12 +55,13 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.low_level_obs_space = Box(low=-np.inf, high=np.inf, shape=[42 + 8 * 2])
         self.low_level_act_space = self.flat_env.action_space
 
-        self.step_per_level = 3
+        self.step_per_level = 5
         self.steps_remaining_at_level = self.step_per_level
         self.num_high_level_steps = 0
         basePath = "~/GitHub/TA/Relative_Joints_CSV"
         self.joints_df = [
-            pd.read_csv("{}/{}JointPosRad.csv".format(basePath, mot)) for mot in self.motion_list
+            pd.read_csv("{}/{}JointPosRad.csv".format(basePath, mot))
+            for mot in self.motion_list
         ]
 
         self.joints_vel_df = [
@@ -149,6 +150,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.selected_motion_frame = 0
 
         self.starting_ep_pos = np.array([0, 0, 0])
+        self.starting_robot_pos = np.array([0, 0, 0])
         self.robot_pos = np.array([0, 0, 0])
 
         self.frame_update_cnt = 0
@@ -163,18 +165,22 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.deltaEndPoints = 0
         self.baseReward = 0
         self.lowTargetScore = 0
-        self.highTargetScore = -self.targetLen
         self.aliveReward = 0
         self.electricityScore = 0
         self.jointLimitScore = 0
         self.bodyPostureScore = 0
 
+        self.highTargetScore = -self.targetLen
+        self.driftScore = 0
+        self.cumulative_driftScore = 0
+
         self.delta_deltaJoints = 0
         self.delta_deltaVelJoints = 0
         self.delta_deltaEndPoints = 0
         self.delta_lowTargetScore = 0
-        self.delta_highTargetScore = 0
         self.delta_bodyPostureScore = 0
+
+        self.delta_highTargetScore = 0
 
         self.cumulative_aliveReward = 0
 
@@ -233,7 +239,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         # Insialisasi dengan posisi awal random sesuai referensi
         return self.resetFromFrame(
             startFrame=self.rng.integers(0, self.max_frame[self.selected_motion] - 5),
-            resetYaw=self.rng.integers(-180, 180),
+            resetYaw=0,
         )
 
     def setWalkTarget(self, x, y):
@@ -270,6 +276,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         robotPos = np.array([0, 0, 1.15])
         self.robot_pos = np.array([robotPos[0], robotPos[1], 0])
         self.last_robotPos = self.robot_pos.copy()
+        self.starting_robot_pos = self.robot_pos.copy()
         self.flat_env.robot.robot_body.reset_position(robotPos)
 
         degToTarget = np.rad2deg(np.arctan2(self.target[1], self.target[0])) + resetYaw
@@ -374,7 +381,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
             )
 
         score = -deltaJoints / self.joint_weight_sum
-        if(useExp):
+        if useExp:
             score = np.exp(score)
             return (score * 3) - 2.3
         return score
@@ -395,7 +402,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
             )
 
         score = -deltaVel / self.joint_vel_weight_sum
-        if(useExp):
+        if useExp:
             score = np.exp(score)
             return (score * 3) - 1.8
         return score
@@ -420,7 +427,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
             deltaEndPoint += np.linalg.norm(deltaVec) * self.end_point_weight[epMap]
 
         score = -deltaEndPoint / self.end_point_weight_sum
-        if(useExp):
+        if useExp:
             score = np.exp(10 * score)
             return 2 * score - 0.5
         return score
@@ -431,11 +438,11 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
     def calcLowLevelTargetScore(self):
         return 0
-    
+
     def calcBodyPostureScore(self, useExp=False):
         roll, pitch, yaw = self.flat_env.robot.robot_body.pose().rpy()
         score = -np.abs(yaw - self.highLevelDegTarget) + (-roll) + (-pitch)
-        if(useExp):
+        if useExp:
             score = np.exp(score)
         return score
 
@@ -458,6 +465,14 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
     def calcJointLimitCost(self):
         return -0.1 * self.flat_env.robot.joints_at_limit
 
+    def calcDriftScore(self):
+        projection = projPointLineSegment(
+            self.robot_pos, self.starting_robot_pos, self.target
+        )
+        # drawLine(self.robot_pos, projection, [0, 0, 0], lifeTime=0, width=1)
+        score = np.linalg.norm(projection - self.robot_pos)
+        return np.exp(-3 * score)
+
     def checkTarget(self):
         distToTarget = np.linalg.norm(self.robot_pos - self.target)
 
@@ -466,6 +481,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
             randomTarget = self.getRandomVec(self.targetLen, 0, initYaw=yaw)
             newTarget = self.robot_pos + randomTarget
             drawLine(self.target, newTarget, [1, 0, 0], lifeTime=0)
+            self.starting_robot_pos = self.target.copy()
             self.target = newTarget
             self.starting_ep_pos = self.robot_pos.copy()
             self.highTargetScore = -self.targetLen
@@ -480,7 +496,6 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         jointVelScore = self.calcJointVelScore()
         endPointScore = self.calcEndPointScore()
         lowTargetScore = self.calcLowLevelTargetScore()
-        highTargetScore = self.calcHighLevelTargetScore()
         bodyPostureScore = self.calcBodyPostureScore()
 
         self.delta_deltaJoints = (jointScore - self.deltaJoints) / 0.0165
@@ -489,23 +504,36 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.delta_lowTargetScore = (
             (lowTargetScore - self.lowTargetScore) / 0.0165 * 0.1
         )
-        self.delta_highTargetScore = (
-            (highTargetScore - self.highTargetScore) / 0.0165 * 0.1 * self.step_per_level
+        self.delta_bodyPostureScore = (
+            (bodyPostureScore - self.bodyPostureScore) / 0.0165 * 0.1
         )
-        self.delta_bodyPostureScore = (bodyPostureScore - self.bodyPostureScore) / 0.0165 * 0.1
 
         self.deltaJoints = jointScore
         self.deltaVelJoints = jointVelScore
         self.deltaEndPoints = endPointScore
         self.lowTargetScore = lowTargetScore
-        self.highTargetScore = highTargetScore
         # self.baseReward = base_reward
         self.electricityScore = self.calcElectricityCost(action)
         self.jointLimitScore = self.calcJointLimitCost()
         self.aliveReward = self.calcAliveReward()
         self.cumulative_aliveReward += self.aliveReward
         self.bodyPostureScore = bodyPostureScore
-        
+        self.cumulative_driftScore += self.calcDriftScore()
+
+    def updateRewardHigh(self):
+        highTargetScore = self.calcHighLevelTargetScore()
+        self.delta_highTargetScore = (highTargetScore - self.highTargetScore) / 0.0165
+        self.delta_highTargetScore /= (
+            self.step_per_level - self.steps_remaining_at_level
+        )
+        self.highTargetScore = highTargetScore
+
+        self.driftScore = self.cumulative_driftScore / (
+            self.step_per_level - self.steps_remaining_at_level
+        )
+        self.cumulative_driftScore = 0
+        # print(self.delta_highTargetScore, self.highTargetScore, self.driftScore)
+
     def high_level_step(self, action):
         # Map sudut agar berada di sekitar -45 s/d 45 derajat
         actionDegree = np.rad2deg(np.arctan2(action[1], action[0]))
@@ -549,8 +577,10 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
     def checkIfDone(self):
         isAlive = self.aliveReward > 0
-        isNearTarget = np.linalg.norm(self.target - self.robot_pos) <= self.targetLen + 1
-        return not(isAlive and isNearTarget)
+        isNearTarget = (
+            np.linalg.norm(self.target - self.robot_pos) <= self.targetLen + 1
+        )
+        return not (isAlive and isNearTarget)
 
     def low_level_step(self, action):
         self.steps_remaining_at_level -= 1
@@ -587,7 +617,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         self.checkTarget()
 
-        # self.drawDebugRobotPosLine()
+        self.drawDebugRobotPosLine()
 
         rew, obs = dict(), dict()
         # Handle env termination & transitions back to higher level
@@ -595,15 +625,17 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         f_done = self.checkIfDone()
         self.cur_timestep += 1
         if f_done or (self.cur_timestep >= self.max_timestep):
+            self.updateRewardHigh()
             done["__all__"] = True
-            rew["high_level_agent"] = self.delta_highTargetScore + self.cumulative_aliveReward * 0.1
+            rew["high_level_agent"] = self.delta_highTargetScore + self.driftScore
             obs["high_level_agent"] = self.getHighLevelObs()
             obs[self.low_level_agent_id] = self.getLowLevelObs()
             rew[self.low_level_agent_id] = totalReward
             self.cumulative_aliveReward = 0
         elif self.steps_remaining_at_level <= 0:
+            self.updateRewardHigh()
             # done[self.low_level_agent_id] = True
-            rew["high_level_agent"] = self.delta_highTargetScore + self.cumulative_aliveReward * 0.1
+            rew["high_level_agent"] = self.delta_highTargetScore + self.driftScore
             obs["high_level_agent"] = self.getHighLevelObs()
             self.cumulative_aliveReward = 0
         else:

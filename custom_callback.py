@@ -18,12 +18,14 @@ class RewardLogCallback(DefaultCallbacks):
 
         episode.user_data["delta_joints"] = []
         episode.user_data["delta_end_point"] = []
+        episode.user_data["delta_joints_velocity"] = []
         episode.user_data["base_reward"] = []
 
         episode.user_data["low_target_score"] = []
-        episode.user_data["high_target_score"] = []
 
-        episode.user_data["delta_joints_velocity"] = []
+        episode.user_data["high_target_score"] = []
+        episode.user_data["drift_score"] = []
+
         episode.user_data["alive_reward"] = []
 
         episode.user_data["dist_from_origin"] = []
@@ -38,10 +40,12 @@ class RewardLogCallback(DefaultCallbacks):
         dj = base_env.get_unwrapped()[0].deltaJoints
         ep = base_env.get_unwrapped()[0].deltaEndPoints
         lts = base_env.get_unwrapped()[0].lowTargetScore
-        hts = base_env.get_unwrapped()[0].highTargetScore
         djv = base_env.get_unwrapped()[0].deltaVelJoints
         bps = base_env.get_unwrapped()[0].bodyPostureScore
-        
+
+        hts = base_env.get_unwrapped()[0].highTargetScore
+        ds = base_env.get_unwrapped()[0].driftScore
+
         br = base_env.get_unwrapped()[0].baseReward
         ar = base_env.get_unwrapped()[0].aliveReward
 
@@ -51,9 +55,11 @@ class RewardLogCallback(DefaultCallbacks):
         episode.user_data["delta_joints"].append(dj)
         episode.user_data["delta_end_point"].append(ep)
         episode.user_data["low_target_score"].append(lts)
-        episode.user_data["high_target_score"].append(hts)
         episode.user_data["delta_joints_velocity"].append(djv)
         episode.user_data["body_posture_score"].append(bps)
+
+        episode.user_data["high_target_score"].append(hts)
+        episode.user_data["drift_score"].append(ds)
         
         episode.user_data["base_reward"].append(br)
         episode.user_data["alive_reward"].append(ar)
@@ -74,7 +80,9 @@ class RewardLogCallback(DefaultCallbacks):
         mean_br = np.mean(episode.user_data["base_reward"])
 
         mean_lts = np.mean(episode.user_data["low_target_score"])
+
         mean_hts = np.mean(episode.user_data["high_target_score"])
+        mean_ds = np.mean(episode.user_data["drift_score"])
 
         mean_djv = np.mean(episode.user_data["delta_joints_velocity"])
         mean_ar = np.mean(episode.user_data["alive_reward"])
@@ -91,7 +99,9 @@ class RewardLogCallback(DefaultCallbacks):
         episode.custom_metrics["base_reward"] = mean_br
         
         episode.custom_metrics["low_target_score"] = mean_lts
+
         episode.custom_metrics["high_target_score"] = mean_hts
+        episode.custom_metrics["drift_score"] = mean_ds
 
         episode.custom_metrics["delta_joints_velocity"] = mean_djv
         episode.custom_metrics["alive_reward"] = mean_ar

@@ -11,6 +11,8 @@ from ray.tune.registry import register_env
 from train_config import config_hier, config_low, single_env
 from collections import OrderedDict
 
+from math_util import projPointLineSegment
+
 def drawLine(c1, c2, color):
     return pybullet.addUserDebugLine(c1, c2, lineColorRGB=color, lineWidth=5, lifeTime=0.1)
 
@@ -42,8 +44,8 @@ if __name__ == "__main__":
     
     agent = PPOTrainer(config_hier)
     experiment_name = "HWalk_Hier_Mimic"
-    experiment_id = "train_HumanoidBulletEnvHier-v0_ad955_00000_0_2021-04-20_13-24-28"
-    checkpoint_num = "270"
+    experiment_id = "train_HumanoidBulletEnvHier-v0_e7d2d_00000_0_2021-04-22_17-48-35"
+    checkpoint_num = "280"
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name, experiment_id, checkpoint_num, checkpoint_num, checkpoint_num
@@ -107,7 +109,9 @@ if __name__ == "__main__":
                 else:
                     action[env.low_level_agent_id] = agent.compute_action(observation[env.low_level_agent_id], policy_id='low_level_policy')
                 observation, reward, f_done, info = env.step(action)
-                done = f_done['__all__'] == True
+                # done = f_done['__all__'] == True
+                if(f_done['__all__']):
+                    print("Done")
             targetHL = np.array([
                 np.cos(env.highLevelDegTarget),
                 np.sin(env.highLevelDegTarget),
@@ -115,7 +119,12 @@ if __name__ == "__main__":
             ]) * 5
             drawLine(env.robot_pos, env.robot_pos + targetHL, [0, 1, 0])
 
-            drawLine(env.starting_ep_pos, env.robot_pos + targetHL, [0, 0, 1])
+            # drawLine(env.robot_pos, env.starting_robot_pos, [0, 0, 0])
+            # drawLine(env.robot_pos, projPointLineSegment(env.robot_pos, env.starting_robot_pos, env.target), [0, 0, 0])
+
+            # drawLine(env.starting_ep_pos, env.robot_pos + targetHL, [0, 0, 1])
+
+            # drawLine(env.robot_pos, [env.flat_env.robot.walk_target_x, env.flat_env.robot.walk_target_y, 0], [0, 0, 1])
 
             time.sleep(1.0 / fps)
 

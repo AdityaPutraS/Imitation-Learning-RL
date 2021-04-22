@@ -83,7 +83,7 @@ def train(config, checkpoint_dir=None):
 
 if __name__ == "__main__":
     ray.init(ignore_reinit_error=True)
-    config_hier["multiagent"]["policies_to_train"] = ["high_level_policy"]
+    # config_hier["multiagent"]["policies_to_train"] = ["high_level_policy"]
     resources = PPOTrainer.default_resource_request(config_hier).to_json()
     tune.run(
         train,
