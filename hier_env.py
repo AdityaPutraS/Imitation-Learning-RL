@@ -143,6 +143,18 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.targetLen = 5
         self.highLevelDegTarget = 0  # Sudut yang harus dicapai oleh robot (radian)
 
+        # self.predefinedTarget = np.array([
+        #     [5, 0, 0],
+        #     [5, -5, 0],
+        #     [0, -5, 0],
+        #     [0, 0, 0]
+        # ])
+        self.predefinedTarget = np.array(
+            [[5, -1, 0],[0, -2, 0], [5, -3, 0], [0, -4, 0], [0, 0, 0]]
+        )
+        self.predefinedTargetIndex = 0
+        self.usePredefinedTarget = False
+
         self.skipFrame = 1
 
         # Menandakan motion apa yang harus dijalankan sekarang dan pada frame berapa
@@ -239,7 +251,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         # Insialisasi dengan posisi awal random sesuai referensi
         return self.resetFromFrame(
             startFrame=self.rng.integers(0, self.max_frame[self.selected_motion] - 5),
-            resetYaw=0,
+            resetYaw=self.rng.integers(-180, 180),
         )
 
     def setWalkTarget(self, x, y):
@@ -262,8 +274,11 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.cur_timestep = 0
 
         # Init target
-        self.target = self.getRandomVec(self.targetLen, 0)
-        # self.target = np.array([0, 3, 0])
+        if self.usePredefinedTarget:
+            self.predefinedTargetIndex = 0
+            self.target = self.predefinedTarget[self.predefinedTargetIndex].copy()
+        else:
+            self.target = self.getRandomVec(self.targetLen, 0)
 
         self.setWalkTarget(self.target[0], self.target[1])
 
@@ -352,7 +367,8 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         degTarget = [np.cos(angleToTarget), np.sin(angleToTarget)]
 
         startPosTheta = np.arctan2(
-            self.starting_robot_pos[1] - self.robot_pos[1], self.starting_robot_pos[0] - self.robot_pos[0]
+            self.starting_robot_pos[1] - self.robot_pos[1],
+            self.starting_robot_pos[0] - self.robot_pos[0],
         )
         angleToStart = startPosTheta - yaw
         degStart = [np.cos(angleToStart), np.sin(angleToStart)]
@@ -477,7 +493,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         projection = projPointLineSegment(
             self.robot_pos, self.starting_robot_pos, self.target
         )
-        # drawLine(self.robot_pos, projection, [0, 0, 0], lifeTime=0, width=1)
+        # drawLine(self.robot_pos, projection, [0, 0, 0], lifeTime=0.1, width=1)
         score = np.linalg.norm(projection - self.robot_pos)
         return np.exp(-3 * score)
 
@@ -488,11 +504,18 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
             _, _, yaw = self.flat_env.robot.robot_body.pose().rpy()
             randomTarget = self.getRandomVec(self.targetLen, 0, initYaw=yaw)
             newTarget = self.robot_pos + randomTarget
+            if self.usePredefinedTarget:
+                self.predefinedTargetIndex = (self.predefinedTargetIndex + 1) % len(
+                    self.predefinedTarget
+                )
+                newTarget = self.predefinedTarget[self.predefinedTargetIndex]
             drawLine(self.target, newTarget, [1, 0, 0], lifeTime=0)
             self.starting_robot_pos = self.target.copy()
             self.target = newTarget
             self.starting_ep_pos = self.robot_pos.copy()
-            self.highTargetScore = -self.targetLen
+            self.highTargetScore = -np.linalg.norm(
+                self.target - self.starting_robot_pos
+            )
 
     def drawDebugRobotPosLine(self):
         if self.cur_timestep % 10 == 0:
@@ -589,6 +612,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
             np.linalg.norm(self.target - self.robot_pos) <= self.targetLen + 1
         )
         return not (isAlive and isNearTarget)
+        # return False
 
     def low_level_step(self, action):
         self.steps_remaining_at_level -= 1
@@ -625,7 +649,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         self.checkTarget()
 
-        self.drawDebugRobotPosLine()
+        # self.drawDebugRobotPosLine()
 
         rew, obs = dict(), dict()
         # Handle env termination & transitions back to higher level

@@ -130,6 +130,22 @@ class LowLevelHumanoidEnv(gym.Env):
         self.targetLen = 5
         self.highLevelDegTarget = 0
 
+        # self.predefinedTarget = np.array([
+        #     [5, 0, 0],
+        #     [5, -5, 0],
+        #     [0, -5, 0],
+        #     [0, 0, 0]
+        # ])
+        self.predefinedTarget = np.array([
+            [5, -1, 0],
+            [0, -2, 0],
+            [5, -3, 0],
+            [0, -4, 0],
+            [0, 0, 0]
+        ])
+        self.predefinedTargetIndex = 0
+        self.usePredefinedTarget=False
+
         self.skipFrame = 1
 
         self.starting_ep_pos = np.array([0, 0, 0])
@@ -239,8 +255,11 @@ class LowLevelHumanoidEnv(gym.Env):
         self.cur_timestep = 0
 
         # Init target
-        self.target = self.getRandomVec(self.targetLen, 0)
-        # self.target = np.array([4, 0, 0])
+        if(self.usePredefinedTarget):
+            self.predefinedTargetIndex = 0
+            self.target = self.predefinedTarget[self.predefinedTargetIndex].copy()
+        else:
+            self.target = self.getRandomVec(self.targetLen, 0)
 
         self.frame = startFrame
         self.setJointsOrientation(self.frame)
@@ -409,6 +428,9 @@ class LowLevelHumanoidEnv(gym.Env):
             _, _, yaw = self.flat_env.robot.robot_body.pose().rpy()
             randomTarget = self.getRandomVec(self.targetLen, 0, initYaw=yaw)
             newTarget = self.robot_pos + randomTarget
+            if(self.usePredefinedTarget):
+                self.predefinedTargetIndex = (self.predefinedTargetIndex + 1) % len(self.predefinedTarget)
+                newTarget = self.predefinedTarget[self.predefinedTargetIndex]
             drawLine(self.target, newTarget, [1, 0, 0], lifeTime=0)
             self.target = newTarget
             self.starting_ep_pos = self.robot_pos.copy()

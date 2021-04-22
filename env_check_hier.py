@@ -44,8 +44,8 @@ if __name__ == "__main__":
     
     agent = PPOTrainer(config_hier)
     experiment_name = "HWalk_Hier_Mimic"
-    experiment_id = "train_HumanoidBulletEnvHier-v0_e7d2d_00000_0_2021-04-22_17-48-35"
-    checkpoint_num = "280"
+    experiment_id = "train_HumanoidBulletEnvHier-v0_49bc9_00000_0_2021-04-23_00-10-42"
+    checkpoint_num = "890"
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name, experiment_id, checkpoint_num, checkpoint_num, checkpoint_num
@@ -81,8 +81,9 @@ if __name__ == "__main__":
     # agent.get_policy("low_level_policy").set_state(importedPolicy)
 
     env = HierarchicalHumanoidEnv()
+    env.usePredefinedTarget = True
 
-    fps = 60.0
+    fps = 120.0
     qKey = ord("q")
     rKey = ord("r")
     eKey = ord("e")
@@ -91,7 +92,8 @@ if __name__ == "__main__":
     while not doneAll:
         done = False
         env.render()
-        observation = env.reset()
+        observation = env.resetFromFrame(startFrame=34)
+        # observation = env.reset()
         print("Start from frame: ", env.selected_motion_frame)
         # sinObs, cosObs = observation[1], observation[2]
         # degObs = np.rad2deg(np.arctan2(sinObs, cosObs))

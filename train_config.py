@@ -61,7 +61,7 @@ highLevelPolicy = (
         "model": {
             "fcnet_hiddens": [512, 256],
             "fcnet_activation": "tanh",
-            "free_log_std": False,
+            "free_log_std": True,
         },
     },
 )

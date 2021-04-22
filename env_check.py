@@ -47,8 +47,9 @@ if __name__ == "__main__":
     )
 
     env = LowLevelHumanoidEnv()
+    env.usePredefinedTarget = True
 
-    fps = 60.0
+    fps = 120.0
     qKey = ord("q")
     rKey = ord("r")
     eKey = ord("e")

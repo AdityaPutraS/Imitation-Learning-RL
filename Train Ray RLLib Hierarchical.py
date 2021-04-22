@@ -31,7 +31,7 @@ checkpoint_num = "3700"
 
 
 experiment_name_hier = "HWalk_Hier_Mimic"
-experiment_id_hier = "train_HumanoidBulletEnvHier-v0_61e86_00000_0_2021-04-21_15-51-29"
+experiment_id_hier = "train_HumanoidBulletEnvHier-v0_f8068_00000_0_2021-04-23_00-08-25"
 checkpoint_num_hier = "1"
 
 resumeFromCheckpoint = True
@@ -83,7 +83,7 @@ def train(config, checkpoint_dir=None):
 
 if __name__ == "__main__":
     ray.init(ignore_reinit_error=True)
-    # config_hier["multiagent"]["policies_to_train"] = ["high_level_policy"]
+    config_hier["multiagent"]["policies_to_train"] = ["high_level_policy"]
     resources = PPOTrainer.default_resource_request(config_hier).to_json()
     tune.run(
         train,
