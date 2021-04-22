@@ -37,13 +37,13 @@ class RewardLogCallback(DefaultCallbacks):
 
     def on_episode_step(self, *, worker: RolloutWorker, base_env: BaseEnv,
                         episode: MultiAgentEpisode, env_index: int, **kwargs):
-        dj = base_env.get_unwrapped()[0].deltaJoints
-        ep = base_env.get_unwrapped()[0].deltaEndPoints
-        lts = base_env.get_unwrapped()[0].lowTargetScore
-        djv = base_env.get_unwrapped()[0].deltaVelJoints
-        bps = base_env.get_unwrapped()[0].bodyPostureScore
+        dj = base_env.get_unwrapped()[0].delta_deltaJoints
+        ep = base_env.get_unwrapped()[0].delta_deltaEndPoints
+        lts = base_env.get_unwrapped()[0].delta_lowTargetScore
+        djv = base_env.get_unwrapped()[0].delta_deltaVelJoints
+        bps = base_env.get_unwrapped()[0].delta_bodyPostureScore
 
-        hts = base_env.get_unwrapped()[0].highTargetScore
+        hts = base_env.get_unwrapped()[0].delta_highTargetScore
         ds = base_env.get_unwrapped()[0].driftScore
 
         br = base_env.get_unwrapped()[0].baseReward

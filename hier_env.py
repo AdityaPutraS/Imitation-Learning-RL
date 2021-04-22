@@ -47,7 +47,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         self.motion_list = ["motion08_03", "motion09_03"]
 
-        self.high_level_obs_space = self.flat_env.observation_space
+        self.high_level_obs_space = Box(low=-np.inf, high=np.inf, shape=[2 + 42])
         self.high_level_act_space = Box(
             low=-1, high=1, shape=[2]
         )  # cos(target), sin(target)
@@ -343,14 +343,22 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         return np.hstack((self.cur_obs[:-2], jointTargetObs))
 
     def getHighLevelObs(self):
+        _, _, yaw = self.flat_env.robot.robot_body.pose().rpy()
+
         targetTheta = np.arctan2(
             self.target[1] - self.robot_pos[1], self.target[0] - self.robot_pos[0]
         )
-        _, _, yaw = self.flat_env.robot.robot_body.pose().rpy()
         angleToTarget = targetTheta - yaw
         degTarget = [np.cos(angleToTarget), np.sin(angleToTarget)]
 
-        return np.hstack((self.cur_obs[:1], degTarget, self.cur_obs[3:]))
+        startPosTheta = np.arctan2(
+            self.starting_robot_pos[1] - self.robot_pos[1], self.starting_robot_pos[0] - self.robot_pos[0]
+        )
+        angleToStart = startPosTheta - yaw
+        degStart = [np.cos(angleToStart), np.sin(angleToStart)]
+
+        # Tidak usah berikan info feet contact
+        return np.hstack((self.cur_obs[:1], degTarget, degStart, self.cur_obs[3:-2]))
 
     def step(self, action_dict):
         assert len(action_dict) == 1, action_dict
