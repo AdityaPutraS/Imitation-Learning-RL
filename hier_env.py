@@ -493,7 +493,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         projection = projPointLineSegment(
             self.robot_pos, self.starting_robot_pos, self.target
         )
-        # drawLine(self.robot_pos, projection, [0, 0, 0], lifeTime=0.1, width=1)
+        drawLine(self.robot_pos, projection, [0, 0, 0], lifeTime=0.1, width=1)
         score = np.linalg.norm(projection - self.robot_pos)
         return np.exp(-3 * score)
 
@@ -649,7 +649,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         self.checkTarget()
 
-        # self.drawDebugRobotPosLine()
+        self.drawDebugRobotPosLine()
 
         rew, obs = dict(), dict()
         # Handle env termination & transitions back to higher level

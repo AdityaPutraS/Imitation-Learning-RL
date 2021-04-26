@@ -387,3 +387,62 @@ PPO_HumanoidBulletEnvLow-v0_71287_00000_0_2021-04-21_08-35-16:
 		
 	hasil:	(18-55-52) Bisa jalan, bisa berputar 180 derajat, bisa mengejar target, masih belum bisa jika ada 2 perubahan arah yang ekstrim secara tiba tiba
 		(08-35-16) Sangat bagus, jalan stabil, kaki tidak terlalu lebar langkahnya, postur tegak, bisa mengejar target, bisa berputar 180 derajat
+		
+PPO_HumanoidBulletEnv-v0-Low_24370_00000_0_2021-04-24_08-43-52:
+	note:	
+		Retrain dari awal
+		skip frame = 1
+		motion08_03
+	update:
+	
+	global update:
+		
+	hasil:	Lama train, bisa jalan tapi lambat, masih belum bisa belok
+	
+PPO_HumanoidBulletEnv-v0-Low_ad0f0_00000_0_2021-04-25_06-44-49
+PPO_HumanoidBulletEnv-v0-Low_807f6_00000_0_2021-04-25_08-45-16
+PPO_HumanoidBulletEnv-v0-Low_51a58_00000_0_2021-04-25_19-06-43:
+	note:	
+		skip frame = 1
+		motion09_03
+		reward menggunakan delta
+		eksperimen:
+			(06-44-49) lr = 0.0005
+				   sgd minibatch = 512
+				   train batch = 6000
+			(08-45-16) lr = 0.00005
+				   sgd minibatch = 512
+				   train batch = 6000
+			(19-06-43) lr = 0.00005
+				   sgd minibatch = 512
+				   train batch = 6000
+				   model ganti 1024,512 => 256,128
+	update:
+		Tidak menggunakan joint velocity reward
+	global update:
+		
+	hasil:	Bisa jalan, tidak bisa belok, kadang lagi jalan bisa jatuh
+	
+PPO_HumanoidBulletEnv-v0-Low_166df_00000_0_2021-04-25_19-33-42:
+	note:	
+		skip frame = 1
+		motion09_03
+		reward menggunakan exp dan tidak menggunakan delta pada reward akhir (kecuali low target)
+		Tidak menggunakan joint velocity reward
+		eksperimen:
+			(19-33-42)
+				lr = 0.00005
+				sgd minibatch = 512
+				train batch = 6000
+				model 256,128
+			()
+				lr = 0.0005
+				sgd minibatch = 512
+				train batch = 6000
+				model 256,128
+	update:
+		
+	global update:
+		
+	hasil:	
+		(19-33-42) Best so far, jalan bagus, bisa belok tajam, gerakan tidak terlalu aneh

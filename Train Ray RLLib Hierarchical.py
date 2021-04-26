@@ -31,8 +31,8 @@ checkpoint_num = "3700"
 
 
 experiment_name_hier = "HWalk_Hier_Mimic"
-experiment_id_hier = "train_HumanoidBulletEnvHier-v0_f8068_00000_0_2021-04-23_00-08-25"
-checkpoint_num_hier = "1"
+experiment_id_hier = "train_HumanoidBulletEnvHier-v0_49bc9_00000_0_2021-04-23_00-10-42"
+checkpoint_num_hier = "890"
 
 resumeFromCheckpoint = True
 useModelFromLowLevelTrain = False

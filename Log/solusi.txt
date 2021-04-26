@@ -1,0 +1,194 @@
+Low Level Agent:
+	- Fungsi:
+		Berinteraksi langsung dengan lingkungan, mengendalikan setiap sendi robot
+	- Observation:
+		Array 1 dimensi dengan panjang 58
+		Isi:
+			- Delta antara z robot sekarang dengan z awal
+			- Nilai sin dari sudut robot ke target
+			- Nilai cos dari sudut robot ke target
+			- Kecepatan robot pada sumbu x
+			- Kecepatan robot pada sumbu y
+			- Kecepatan robot pada sumbu z
+			- Nilai roll badan robot
+			- Nilai pitch badan robot
+			- Posisi (dalam radian) dan kecepatan (rad/s) setiap sendi (total ada 17 sendi)
+			- Posisi (dalam radian) dan kecepatan (rad/s) setiap sendi referensi (total ada 8 sendi):
+				- Sendi referensi:
+					- right_knee
+					- right_hip_x
+					- right_hip_y
+					- right_hip_z
+					- left_knee
+					- left_hip_x
+					- left_hip_y
+					- left_hip_z
+	- Action:
+		Array 1 dimensi dengan panjang 17
+		Isi:
+			- Nilai torsi setiap sendi (total ada 17 sendi)
+	- Detail reward:
+		- deltaJoints:
+			- Intuisi: Menghitung rata rata perbedaan sudut sendi robot dengan sudut pada referensi
+			- Rumus perhitungan: 
+				(
+                    3 * delta(right_knee) +
+                    1 * delta(right_hip_x) +
+                    3 * delta(right_hip_y) +
+                    1 * delta(right_hip_z) +
+                    3 * delta(left_knee) +
+                    1 * delta(left_hip_x) +
+                    3 * delta(left_hip_y) +
+                    1 * delta(left_hip_z)
+                ) / 16
+            - Efek pada agen: deltaJoints merupakan salah satu reward yang memastikan agen
+                mengikuti gerakan referensi yang diberikan. Agen akan berusaha untuk menyamakan sudut
+                setiap sendi dengan referensi
+		- deltaVelJoints:
+            - Intuisi: Menghitung rata rata perbedaan kecepatan sendi robot dengan kecepatan pada referensi
+			- Rumus perhitungan: 
+				(
+                    1 * delta(right_knee) +
+                    1 * delta(right_hip_x) +
+                    1 * delta(right_hip_y) +
+                    1 * delta(right_hip_z) +
+                    1 * delta(left_knee) +
+                    1 * delta(left_hip_x) +
+                    1 * delta(left_hip_y) +
+                    1 * delta(left_hip_z)
+                ) / 8
+            - Efek pada agen: deltaVelJoints merupakan salah satu reward yang memastikan agen
+                mengikuti gerakan referensi yang diberikan. Pengecekan posisi sudut saja masih kurang karena
+                mungkin saja ada gerakan tertentu yang membutuhkan kecepatan sendi tertentu, seperti pada gerak
+                berjalan, kecepatan mengangkat dan menurunkan kaki sangat mempengaruhi kestabilan robot
+		- deltaEndPoints:
+            - Intuisi: Menghitung rata rata jarak posisi bagian robot asli dengan posisi bagian robot menurut referensi
+                relatif terhadap badan
+			- Rumus perhitungan: 
+				(
+                    1 * ||pos(Lutut Kanan) - pos(Lutut Kanan)|| +
+                    3 * ||pos(Tapak Kanan) - pos(Tapak Kanan)|| +
+                    1 * ||pos(Lutut Kiri) - pos(Lutut Kiri)|| +
+                    3 * ||pos(Tapak Kiri) - pos(Tapak Kiri)||
+                ) / 8
+            - Efek pada agen: deltaEndPoint mengecek apakah posisi bagian robot pada koordinat global
+                sama dengan referensi. deltaJoints dan deltaVelJoints mengecek apakah sendi mengikuti gerakan referensi, tapi
+                karena setiap sendi terhubung satu sama lain maka posisi aktual bagian robot akan sangat bergantung pada sudut sendi lainnya.
+                Sebagai contoh jika sendi paha xz (roll dan yaw) dan lutut sama dengan referensi, namun sendi paha y (pitch) berbeda,
+                maka posisi tapak kaki akan lebih terangkat dibanding referensi. Reward ini berguna untuk menilai hal tersebut
+		- lowTargetScore:
+            - Intuisi: Menghitung jarak robot dengan target
+			- Rumus perhitungan: 
+				||target - robot||
+            - Efek pada agen: Memastikan robot bergerak ke arah target
+		- electricityScore:
+            - Intuisi: Mengestimasi daya yang digunakan oleh robot untuk melakukan suatu aksi
+			- Rumus perhitungan: 
+				-1 * mean(abs(aksi * vel(sendi))) +
+                -0.1 * mean(aksi^2)
+            - Efek pada agen: Memberi penalti pada agen jika melakukan gerakan yang bertorsi besar
+                sehingga menghabiskan banyak daya robot
+		- jointLimitScore:
+            - Intuisi: Memberi penalti jika ada sendi yang berada pada posisi ekstrim
+			- Rumus perhitungan: 
+				-1 * sum({
+                    0, sendi tidak berada pada posisi ekstrim
+                    1, sendi berada pada posisi ekstrim
+                } untuk setiap sendi pada robot)
+            - Efek pada agen: Memberi penalti pada agen jika menghasilkan gerakan yang mengakibatkan sendi robot
+                berada pada posisi yang ekstrim.
+		- aliveReward:
+            - Intuisi: Memberi penalti jika nilai z robot berada dibawah batas yang ditentukan
+			- Rumus perhitungan: 
+				{
+                    2, z > 0.75
+                    -1, sebaliknya
+                }
+            - Efek pada agen: Memastikan robot mempertahankan posisi z nya. Secara tidak langsung memaksa robot untuk
+                memiliki postur tegak juga karena jika robot tidak tegak, nilai z nya akan berada di bawah batas
+		- bodyPostureScore:
+            - Intuisi: Menghitung kesesuaian postur tubuh robot
+			- Rumus perhitungan: 
+				abs(yaw - sudut robot dengan target) + roll + pitch
+            - Efek pada agen: Robot akan selalu berusaha untuk menghadap target dan memiliki tubuh yang tegak
+	- Penghitungan reward agent:
+		Reward akhir:
+			0.1 * delta(-deltaJoints) / 0.0165 +
+			0.1 * delta(-deltaVelJoints) / 0.0165 * 0.1+
+			0.1 * delta(-deltaEndPoints) / 0.0165 +
+			0.2 * delta(-lowTargetScore) / 0.0165 +
+			0.1 * electricityScore +
+			0.2 * jointLimitScore +
+			0.1 * aliveReward +
+			0.2 * delta(-bodyPostureScore) / 0.0165 * 0.1
+        Note:
+            deltaJoints, deltaVelJoints, deltaEndPoints, lowTargetScore, bodyPostureScore harus diminimalisir
+            untuk menghasilkan gerakan berjalan yang sesuai referensi sehingga perhitungan menggunakan delta dari negatif reward
+            tersebut. Penghitungan delta tersebut juga dibagi dengan time step lingkungan sebesar 0.0165 sekon per step
+	- Model Neural Net:
+		- Fully Connected Neural Network
+		- Layer:
+			- 1024 FCNN
+			- Tanh
+			- 512 FCNN
+			- Tanh
+			- 17 FCNN
+			- Tanh
+	- Proses train:
+		- Lingkungan memberikan observasi awal
+		- Model menginferensi aksi dari observasi
+		- Terapkan aksi ke lingkungan
+		- Simpan observasi baru
+		- Hitung semua reward untuk agen
+		- Cek apakah sudah mencapai kondisi terminasi
+		- Berikan reward kepada agen
+
+High Level Agent:
+	- Fungsi:
+		Layer abstraksi low level agent yang mengatur arah agen agar bergerak ke target dengan baik
+	- Observation:
+		Array 1 dimensi dengan panjang 44
+		Isi:
+			- Delta antara z robot sekarang dengan z awal
+			- Nilai sin dari sudut robot ke target
+			- Nilai cos dari sudut robot ke target
+            - Nilai sin dari sudut robot ke posisi awal robot
+			- Nilai cos dari sudut robot ke posisi awal robot
+			- Kecepatan robot pada sumbu x
+			- Kecepatan robot pada sumbu y
+			- Kecepatan robot pada sumbu z
+			- Nilai roll badan robot
+			- Nilai pitch badan robot
+			- Posisi (dalam radian) dan kecepatan (rad/s) setiap sendi (total ada 17 sendi)
+	- Action:
+		Array 1 dimensi dengan panjang 2
+		Isi:
+			- Nilai cos dari target sudut sementara
+            - Nilai sin dari target sudut sementara
+	- Detail reward:
+		- highTargetScore:
+			- Intuisi: Menghitung apakah target sementara yang diberikan ke low level agen menyebabkan
+            agen tersebut berhasil bergerak menuju target atau tidak
+			- Rumus perhitungan: 
+				||target - robot||
+            - Efek pada agen: Memastikan high level agen memberi sudut sementara yang menyebabkan robot
+            bergerak lebih dekat ke target
+        - driftScore:
+			- Intuisi: Menghitung persimpangan posisi robot dengan vektor posisi awal robot -> target
+			- Rumus perhitungan: 
+				||projection(robot pos) - robot pos||
+                projection(robot pos) = proyeksi posisi robot pada garis vektor posisi awal robot -> target
+            - Efek pada agen: Memastikan agen memberi sudut yang menyebabkan robot memiliki simpangan yang minimal
+	- Model Neural Net:
+		- Fully Connected Neural Network
+		- Layer:
+			- 512
+            - Tanh
+            - 256
+            - Tanh
+            - 2
+            - Tanh
+	- Proses train:
+		- Train low level terlebih dahulu
+        - Copy weight low level ke model gabungan high level dan low level
+        - Train hanya high level policy nya saja
