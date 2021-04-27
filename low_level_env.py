@@ -130,25 +130,14 @@ class LowLevelHumanoidEnv(gym.Env):
         self.targetLen = 5
         self.highLevelDegTarget = 0
 
-        # self.predefinedTarget = np.array([
-        #     [5, 0, 0],
-        #     [5, -5, 0],
-        #     [0, -5, 0],
-        #     [0, 0, 0]
-        # ])
-        self.predefinedTarget = np.array([
-            [5, -1, 0],
-            [0, -2, 0],
-            [5, -3, 0],
-            [0, -4, 0],
-            [0, 0, 0]
-        ])
+        self.predefinedTarget = np.array([[]])
         self.predefinedTargetIndex = 0
         self.usePredefinedTarget=False
 
         self.skipFrame = 1
 
         self.starting_ep_pos = np.array([0, 0, 0])
+        self.starting_robot_pos = np.array([0, 0, 0])
         self.robot_pos = np.array([0, 0, 0])
 
         self.frame_update_cnt = 0
@@ -273,6 +262,7 @@ class LowLevelHumanoidEnv(gym.Env):
         robotPos = np.array([0, 0, 1.15])
         self.robot_pos = np.array([robotPos[0], robotPos[1], 0])
         self.last_robotPos = self.robot_pos.copy()
+        self.starting_robot_pos = self.robot_pos.copy()
         self.flat_env.robot.robot_body.reset_position(robotPos)
 
         degToTarget = np.rad2deg(np.arctan2(self.target[1], self.target[0]))
@@ -436,6 +426,7 @@ class LowLevelHumanoidEnv(gym.Env):
                 self.predefinedTargetIndex = (self.predefinedTargetIndex + 1) % len(self.predefinedTarget)
                 newTarget = self.predefinedTarget[self.predefinedTargetIndex]
             drawLine(self.target, newTarget, [1, 0, 0], lifeTime=0)
+            self.starting_robot_pos = self.target.copy()
             self.target = newTarget
             self.starting_ep_pos = self.robot_pos.copy()
 

@@ -13,6 +13,10 @@ from collections import OrderedDict
 
 from math_util import projPointLineSegment
 
+from scipy.spatial.transform import Rotation as R
+import json
+import copy
+
 def drawLine(c1, c2, color):
     return pybullet.addUserDebugLine(c1, c2, lineColorRGB=color, lineWidth=5, lifeTime=0.1)
 
@@ -29,6 +33,9 @@ def drawAxis():
     )
     return xId, yId, zId
 
+def calcDrift(pos, lineStart, lineEnd):
+    projection = projPointLineSegment(pos, lineStart, lineEnd)
+    return np.linalg.norm(projection - pos)
 
 def drawText(text, pos, color, lifeTime):
     return pybullet.addUserDebugText(
@@ -44,8 +51,8 @@ if __name__ == "__main__":
     
     agent = PPOTrainer(config_hier)
     experiment_name = "HWalk_Hier_Mimic"
-    experiment_id = "train_HumanoidBulletEnvHier-v0_1af99_00000_0_2021-04-23_07-18-54"
-    checkpoint_num = "330"
+    experiment_id = "train_HumanoidBulletEnvHier-v0_89e2b_00000_0_2021-04-26_15-39-31"
+    checkpoint_num = "670"
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name, experiment_id, checkpoint_num, checkpoint_num, checkpoint_num
@@ -83,62 +90,121 @@ if __name__ == "__main__":
     env = HierarchicalHumanoidEnv()
     env.usePredefinedTarget = True
 
-    fps = 120.0
-    qKey = ord("q")
-    rKey = ord("r")
-    eKey = ord("e")
+    # Kotak
+    # env.predefinedTarget = np.array([
+    #     [5, 0, 0],
+    #     [5, -5, 0],
+    #     [0, -5, 0],
+    #     [0, 0, 0]
+    # ])
 
-    doneAll = False
-    while not doneAll:
-        done = False
-        env.render()
-        observation = env.resetFromFrame(startFrame=34)
-        # observation = env.reset()
-        print("Start from frame: ", env.selected_motion_frame)
-        # sinObs, cosObs = observation[1], observation[2]
-        # degObs = np.rad2deg(np.arctan2(sinObs, cosObs))
-        # print("Deg obs: ", degObs)
-        
-        drawAxis()
-        pause = True
-        while not done and not doneAll:
-            action = dict()
-            if(not pause):
-                if('high_level_agent' in observation):
-                    action['high_level_agent'] = agent.compute_action(observation['high_level_agent'], policy_id='high_level_policy')
-                    # if(not pause):
-                        # pause = True
-                else:
-                    action[env.low_level_agent_id] = agent.compute_action(observation[env.low_level_agent_id], policy_id='low_level_policy')
-                observation, reward, f_done, info = env.step(action)
-                # done = f_done['__all__'] == True
-                if(f_done['__all__']):
-                    print("Done")
-            targetHL = np.array([
-                np.cos(env.highLevelDegTarget),
-                np.sin(env.highLevelDegTarget),
-                0
-            ]) * 5
-            drawLine(env.robot_pos, env.robot_pos + targetHL, [0, 1, 0])
+    # M
+    # env.predefinedTarget = np.array([
+    #     [5, -1, 0],
+    #     [0, -2, 0],
+    #     [5, -3, 0],
+    #     [0, -4, 0],
+    #     [0, 0, 0]
+    # ])
 
-            # drawLine(env.robot_pos, env.starting_robot_pos, [0, 0, 0])
-            # drawLine(env.robot_pos, projPointLineSegment(env.robot_pos, env.starting_robot_pos, env.target), [0, 0, 0])
+    # Segi Enam
+    # env.predefinedTarget = np.array([
+    #     [0, 5, 0],
+    #     [4.33, 2.5, 0],
+    #     [4.33, -2.5, 0],
+    #     [0, -5, 0],
+    #     [-4.33, -2.5, 0],
+    #     [-4.33, 2.5, 0],
+    # ])
 
-            # drawLine(env.starting_ep_pos, env.robot_pos + targetHL, [0, 0, 1])
+    # Putar 180 Derajat
+    # env.predefinedTarget = np.array([
+    #     [0, 5, 0],
+    #     [0, -5, 0],
+    #     [-5, 0, 0],
+    #     [5, 0, 0]
+    # ])
 
-            # drawLine(env.robot_pos, [env.flat_env.robot.walk_target_x, env.flat_env.robot.walk_target_y, 0], [0, 0, 1])
+    experiment_data = {}
+    deltaDegree_list = [10 * i for i in range(0, 36)]
+    for degree in deltaDegree_list:
+        print("Start {} derajat".format(degree))
+        # Buat rangkaian target untuk robot
+        targetLen = 5
+        deltaDegree = degree
+        tempTarget = np.array([0, 0, 0])
+        target = []
+        for i in range(100):
+            rot = R.from_euler('z', deltaDegree * i, degrees=True)
+            tempTarget = tempTarget + rot.apply(np.array([0, 1, 0]) * targetLen)
+            target.append(tempTarget)
+        target = np.array(target)
+        env.predefinedTarget = target.copy()
+        print("  Selesai membuat target, mulai simulasi")
 
-            time.sleep(1.0 / fps)
+        fps = 240.0
+        qKey = ord("q")
+        rKey = ord("r")
+        eKey = ord("e")
 
-            keys = pybullet.getKeyboardEvents()
-            if qKey in keys and keys[qKey] & pybullet.KEY_WAS_TRIGGERED:
-                print("QUIT")
+        doneAll = False
+        i = 0
+        drift_data = []
+        timestep_data = []
+        while not doneAll:
+            i += 1
+            done = False
+            # env.render()
+            observation = env.resetFromFrame(startFrame=34)
+            # drawAxis()
+            pause = False
+
+            drift = []
+            while not done and not doneAll:
+                action = dict()
+                if(not pause):
+                    if('high_level_agent' in observation):
+                        action['high_level_agent'] = agent.compute_action(observation['high_level_agent'], policy_id='high_level_policy')
+                        # if(not pause):
+                            # pause = True
+                    else:
+                        action[env.low_level_agent_id] = agent.compute_action(observation[env.low_level_agent_id], policy_id='low_level_policy')
+                    observation, reward, f_done, info = env.step(action)
+                    done = f_done['__all__'] == True
+                    drift.append(calcDrift(env.robot_pos, env.starting_robot_pos, env.target))
+                    # if(f_done['__all__']):
+                        # print("Done")
+                # targetHL = np.array([
+                #     np.cos(env.highLevelDegTarget),
+                #     np.sin(env.highLevelDegTarget),
+                #     0
+                # ]) * 5
+                # drawLine(env.robot_pos, env.robot_pos + targetHL, [0, 1, 0])
+
+                # time.sleep(1.0 / fps)
+
+                # keys = pybullet.getKeyboardEvents()
+                # if qKey in keys and keys[qKey] & pybullet.KEY_WAS_TRIGGERED:
+                #     print("QUIT")
+                #     doneAll = True
+                # elif rKey in keys and keys[rKey] & pybullet.KEY_WAS_TRIGGERED:
+                #     done = True
+                # elif eKey in keys and keys[eKey] & pybullet.KEY_WAS_TRIGGERED:
+                #     pause = not pause
+            print("    Hidup selama {} steps".format(env.cur_timestep))
+            timestep_data.append(env.cur_timestep)
+            drift_data.append(np.mean(drift))
+            pybullet.removeAllUserDebugItems()
+            if (i == 10):
                 doneAll = True
-            elif rKey in keys and keys[rKey] & pybullet.KEY_WAS_TRIGGERED:
-                done = True
-            elif eKey in keys and keys[eKey] & pybullet.KEY_WAS_TRIGGERED:
-                pause = not pause
-        print("Survived {} steps".format(env.cur_timestep))
-        pybullet.removeAllUserDebugItems()
+        print("  Mean drift untuk {} derajat   : {}".format(degree, np.mean(drift_data)))
+        print("  Mean timestep untuk {} derajat: {}".format(degree, np.mean(timestep_data)))
+        experiment_data[degree] = {
+            "drift": copy.deepcopy(drift_data),
+            "timestep": copy.deepcopy(timestep_data),
+        }
     env.close()
     ray.shutdown()
+
+    with open('Log/experiment_data_hier.json', 'w') as fp:
+        json.dump(experiment_data, fp)

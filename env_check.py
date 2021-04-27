@@ -8,6 +8,11 @@ from ray.rllib.agents.ppo import PPOTrainer
 from ray.tune.registry import register_env
 
 from train_config import config_low
+from math_util import projPointLineSegment
+
+from scipy.spatial.transform import Rotation as R
+import json
+import copy
 
 
 def drawLine(c1, c2, color):
@@ -34,7 +39,10 @@ def drawText(text, pos, color, lifeTime):
         text, pos, textColorRGB=color, textSize=2, lifeTime=lifeTime
     )
 
-
+def calcDrift(pos, lineStart, lineEnd):
+    projection = projPointLineSegment(pos, lineStart, lineEnd)
+    return np.linalg.norm(projection - pos)
+    
 if __name__ == "__main__":
     ray.shutdown()
     ray.init(ignore_reinit_error=True)
@@ -42,7 +50,7 @@ if __name__ == "__main__":
     agent = PPOTrainer(config_low)
     experiment_name = "HWalk_Low_Mimic"
     experiment_id = "PPO_HumanoidBulletEnv-v0-Low_166df_00000_0_2021-04-25_19-33-42"
-    checkpoint_num = "2560"
+    checkpoint_num = "2580"
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name, experiment_id, checkpoint_num, checkpoint_num
@@ -51,80 +59,112 @@ if __name__ == "__main__":
 
     env = LowLevelHumanoidEnv()
     env.usePredefinedTarget = True
+    
+    # Kotak
+    # env.predefinedTarget = np.array([
+    #     [5, 0, 0],
+    #     [5, -5, 0],
+    #     [0, -5, 0],
+    #     [0, 0, 0]
+    # ])
 
-    fps = 60.0
-    qKey = ord("q")
-    rKey = ord("r")
-    eKey = ord("e")
+    # M
+    # env.predefinedTarget = np.array([
+    #     [5, -1, 0],
+    #     [0, -2, 0],
+    #     [5, -3, 0],
+    #     [0, -4, 0],
+    #     [0, 0, 0]
+    # ])
 
-    doneAll = False
-    while not doneAll:
-        done = False
-        env.render()
-        observation = env.reset()
-        print("Start from frame: ", env.frame)
-        sinObs, cosObs = observation[1], observation[2]
-        degObs = np.rad2deg(np.arctan2(sinObs, cosObs))
-        print("Deg obs: ", degObs)
-        # print(env.target, env.targetHighLevel)
-        drawAxis()
-        pause = True
-        r, p, y = env.flat_env.robot.robot_body.pose().rpy()
-        print(r, p, y)
-        while not done and not doneAll:
-            if not pause:
-                action = agent.compute_action(observation)
-                observation, reward, f_done, info = env.step(action)
-                # pause = True
-                # reward = [
-                #     env.delta_deltaJoints,
-                #     env.delta_deltaVelJoints,
-                #     env.delta_deltaEndPoints,
-                #     env.delta_lowTargetScore,
-                #     env.electricityScore,
-                #     env.jointLimitScore,
-                #     env.aliveReward,
-                #     env.delta_bodyPostureScore,
-                # ]
-                # print(reward)
-                # r, p, y = env.flat_env.robot.robot_body.pose().rpy()
-                # print(-np.abs(r), -np.abs(p), -np.abs(y - env.highLevelDegTarget), env.delta_bodyPostureScore)
-            # print(env.lowTargetScore)
-            # Garis dari origin ke target akhir yang harus dicapai robot
-            # drawLine([0, 0, 0], env.target, [0, 1, 0])
+    # Segi Enam
+    # env.predefinedTarget = np.array([
+    #     [0, 5, 0],
+    #     [4.33, 2.5, 0],
+    #     [4.33, -2.5, 0],
+    #     [0, -5, 0],
+    #     [-4.33, -2.5, 0],
+    #     [-4.33, 2.5, 0],
+    # ])
 
-            robotPos = np.array(env.flat_env.robot.body_xyz)
-            robotPos[2] = 0
-            # Garis dari origin ke robot
-            # drawLine([0, 0, 0], robotPos, [1, 1, 1])
+    # Putar 180 Derajat
+    # env.predefinedTarget = np.array([
+    #     [0, 5, 0],
+    #     [0, -5, 0],
+    #     [-5, 0, 0],
+    #     [5, 0, 0]
+    # ])
+    experiment_data = {}
+    deltaDegree_list = [10 * i for i in range(0, 36)]
+    for degree in deltaDegree_list:
+        print("Start {} derajat".format(degree))
+        # Buat rangkaian target untuk robot
+        targetLen = 5
+        deltaDegree = degree
+        tempTarget = np.array([0, 0, 0])
+        target = []
+        for i in range(100):
+            rot = R.from_euler('z', deltaDegree * i, degrees=True)
+            tempTarget = tempTarget + rot.apply(np.array([0, 1, 0]) * targetLen)
+            target.append(tempTarget)
+        target = np.array(target)
+        env.predefinedTarget = target.copy()
+        print("  Selesai membuat target, mulai simulasi")
 
-            # Garis dari robot ke walk target environment
-            # vHighTarget = np.array([np.cos(env.highLevelDegTarget), np.sin(env.highLevelDegTarget), 0]) * 10
-            # drawLine(robotPos, robotPos + vHighTarget, [0, 0, 0])
+        fps = 240.0
+        qKey = ord("q")
+        rKey = ord("r")
+        eKey = ord("e")
 
-            # drawLine(env.starting_ep_pos + np.array([0, 0, 1]), robotPos + env.targetHighLevel, [0, 0, 1])
+        doneAll = False
+        i = 0
+        drift_data = []
+        timestep_data = []
+        while not doneAll:
+            i += 1
+            done = False
+            # env.render()
+            observation = env.resetFromFrame(startFrame=0)
+            # drawAxis()
+            pause = False
 
-            drawLine(
-                robotPos,
-                [env.flat_env.robot.walk_target_x, env.flat_env.robot.walk_target_y, 0],
-                [0, 0, 1],
-            )
-            # print(observation)
-            # drawText(str(env.frame), env.flat_env.parts["lwaist"].get_position() + np.array([0, 0, 1]), [0, 1, 0], 1.0/30)
-            # drawText(str(env.deltaJoints), env.flat_env.parts["lwaist"].get_position() + np.array([1, 0, 1]), [1, 0, 0], 1.0/30)
-            # drawText(str(env.deltaEndPoints), env.flat_env.parts["lwaist"].get_position() + np.array([-1, 0, 1]), [0, 0, 1], 1.0/30)
+            drift = []
+            while not done and not doneAll:
+                if not pause:
+                    action = agent.compute_action(observation)
+                    observation, reward, f_done, info = env.step(action)
+                    done = f_done
+                    drift.append(calcDrift(env.robot_pos, env.starting_robot_pos, env.target))
+                # drawLine(
+                #     env.robot_pos,
+                #     [env.flat_env.robot.walk_target_x, env.flat_env.robot.walk_target_y, 0],
+                #     [0, 0, 1],
+                # )
 
-            time.sleep(1.0 / fps)
+                # time.sleep(1.0 / fps)
 
-            keys = pybullet.getKeyboardEvents()
-            if qKey in keys and keys[qKey] & pybullet.KEY_WAS_TRIGGERED:
-                print("QUIT")
+                # keys = pybullet.getKeyboardEvents()
+                # if qKey in keys and keys[qKey] & pybullet.KEY_WAS_TRIGGERED:
+                #     print("QUIT")
+                #     doneAll = True
+                # elif rKey in keys and keys[rKey] & pybullet.KEY_WAS_TRIGGERED:
+                #     done = True
+                # elif eKey in keys and keys[eKey] & pybullet.KEY_WAS_TRIGGERED:
+                #     pause = not pause
+            print("    Hidup selama {} steps".format(env.cur_timestep))
+            timestep_data.append(env.cur_timestep)
+            drift_data.append(np.mean(drift))
+            pybullet.removeAllUserDebugItems()
+            if (i == 10):
                 doneAll = True
-            elif rKey in keys and keys[rKey] & pybullet.KEY_WAS_TRIGGERED:
-                done = True
-            elif eKey in keys and keys[eKey] & pybullet.KEY_WAS_TRIGGERED:
-                pause = not pause
-        print("Survived {} steps".format(env.cur_timestep))
-        pybullet.removeAllUserDebugItems()
+        print("  Mean drift untuk {} derajat   : {}".format(degree, np.mean(drift_data)))
+        print("  Mean timestep untuk {} derajat: {}".format(degree, np.mean(timestep_data)))
+        experiment_data[degree] = {
+            "drift": copy.deepcopy(drift_data),
+            "timestep": copy.deepcopy(timestep_data),
+        }
     env.close()
     ray.shutdown()
+
+    with open('Log/experiment_data_low.json', 'w') as fp:
+        json.dump(experiment_data, fp)

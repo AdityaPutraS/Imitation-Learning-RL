@@ -51,8 +51,8 @@ if __name__ == "__main__":
         # jv = []
         for f in range(env.max_frame):
             env.setJointsOrientation(f)
-            ep.append(env.calcEndPointScore(debug=True))
-            js.append(env.calcJointScore())
+            ep.append(env.calcEndPointScore(useExp=True))
+            js.append(env.calcJointScore(useExp=True))
             # jv.append(env.calcJointVelScore())
         endPointData.append(ep)
         jointScoreData.append(js)

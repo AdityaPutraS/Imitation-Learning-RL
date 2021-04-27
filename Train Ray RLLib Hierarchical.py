@@ -26,13 +26,13 @@ from ray.tune import CLIReporter
 import os
 
 experiment_name = "HWalk_Low_Mimic"
-experiment_id = "PPO_HumanoidBulletEnvLow-v0_71287_00000_0_2021-04-21_08-35-16"
-checkpoint_num = "3700"
+experiment_id = "PPO_HumanoidBulletEnv-v0-Low_166df_00000_0_2021-04-25_19-33-42"
+checkpoint_num = "2580"
 
 
 experiment_name_hier = "HWalk_Hier_Mimic"
-experiment_id_hier = "train_HumanoidBulletEnvHier-v0_49bc9_00000_0_2021-04-23_00-10-42"
-checkpoint_num_hier = "890"
+experiment_id_hier = "train_HumanoidBulletEnvHier-v0_a56d7_00000_0_2021-04-26_13-02-48"
+checkpoint_num_hier = "1"
 
 resumeFromCheckpoint = True
 useModelFromLowLevelTrain = False

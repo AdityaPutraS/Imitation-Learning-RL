@@ -5,6 +5,7 @@ from ray.rllib.agents.ppo import PPOTrainer
 from ray.tune.registry import register_env
 from ray.tune import function
 from custom_callback import RewardLogCallback
+from ray.rllib.agents.ddpg.apex import APEX_DDPG_DEFAULT_CONFIG
 
 def make_env_low(env_config):
     import pybullet_envs
@@ -61,8 +62,8 @@ config_low_pg = {
     "monitor": True,
     "evaluation_num_episodes": 50,
     "gamma": 0.995,
-    "lr": 0.00005,
-    "train_batch_size": 6000,
+    "lr": 0.005,
+    "train_batch_size": 300,
     "model": {
         "fcnet_hiddens": [256, 128],
         "fcnet_activation": "tanh",
@@ -70,8 +71,31 @@ config_low_pg = {
     },
     "batch_mode": "complete_episodes",
     "observation_filter": "NoFilter",
+    "rollout_fragment_length": 200,
 }
 
+config_low_apex_ddpg = APEX_DDPG_DEFAULT_CONFIG.copy()
+config_low_apex_ddpg.update({
+    "env": ENV_LOW,
+    "callbacks": RewardLogCallback,
+    "num_workers": 3,
+    "num_envs_per_worker": 10,
+    "num_gpus": 1,
+    "monitor": True,
+    "evaluation_num_episodes": 50,
+    "gamma": 0.995,
+    "critic_lr": 0.005,
+    "actor_lr": 0.005,
+    "train_batch_size": 6000,
+    "actor_hiddens": [256, 128],
+    "actor_hidden_activation": "tanh",
+    "critic_hiddens": [256, 128],
+    "critic_hidden_activation": "tanh",
+    "batch_mode": "complete_episodes",
+    "observation_filter": "NoFilter",
+    "timesteps_per_iteration": 24000,
+    "min_iter_time_s": 10,
+})
 config_low_ddpg = {
     "env": ENV_LOW,
     "callbacks": RewardLogCallback,
@@ -82,15 +106,16 @@ config_low_ddpg = {
     "monitor": True,
     "evaluation_num_episodes": 50,
     "gamma": 0.995,
-    "critic_lr": 5e-3,
-    "actor_lr": 5e-3,
-    "train_batch_size": 36000,
-    "actor_hiddens": [1024, 512],
+    "critic_lr": 0.005,
+    "actor_lr": 0.005,
+    "train_batch_size": 6000,
+    "actor_hiddens": [256, 128],
     "actor_hidden_activation": "tanh",
-    "critic_hiddens": [1024, 512],
+    "critic_hiddens": [256, 128],
     "critic_hidden_activation": "tanh",
     "batch_mode": "complete_episodes",
     "observation_filter": "NoFilter",
+    "timesteps_per_iteration": 24000,
 }
 
 config_low_impala = {
@@ -105,14 +130,38 @@ config_low_impala = {
     "gamma": 0.995,
     "lr": 0.0005,
     "num_sgd_iter": 20,
-    "train_batch_size": 36000,
+    "train_batch_size": 6000,
     "model": {
-        "fcnet_hiddens": [1024, 512],
+        "fcnet_hiddens": [256, 128],
         "fcnet_activation": "tanh",
         "free_log_std": True,
     },
     "batch_mode": "truncate_episodes",
     "observation_filter": "NoFilter",
+}
+
+config_low_a2c = {
+    "env": ENV_LOW,
+    "callbacks": RewardLogCallback,
+    "num_workers": 6,
+    "num_envs_per_worker": 20,
+    "log_level": "WARN",
+    "num_gpus": 1,
+    "monitor": True,
+    "evaluation_num_episodes": 50,
+    "gamma": 0.995,
+    "lr": 0.005,
+    "vf_loss_coeff": 1.0,
+    "entropy_coeff": 0.0,
+    "train_batch_size": 6000,
+    "model": {
+        "fcnet_hiddens": [256, 128],
+        "fcnet_activation": "tanh",
+        "free_log_std": True,
+    },
+    "batch_mode": "complete_episodes",
+    "observation_filter": "NoFilter",
+    "rollout_fragment_length": 10,
 }
 
 single_env = HierarchicalHumanoidEnv()
@@ -123,7 +172,7 @@ highLevelPolicy = (
     single_env.high_level_act_space,
     {
         "model": {
-            "fcnet_hiddens": [512, 256],
+            "fcnet_hiddens": [256, 128],
             "fcnet_activation": "tanh",
             "free_log_std": True,
         },
@@ -136,7 +185,7 @@ lowLevelPolicy = (
     single_env.low_level_act_space,
     {
         "model": {
-            "fcnet_hiddens": [1024, 512],
+            "fcnet_hiddens": [256, 128],
             "fcnet_activation": "tanh",
             "free_log_std": True,
         },
