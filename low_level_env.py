@@ -34,7 +34,7 @@ def drawLine(c1, c2, color, lifeTime=0.1):
 class LowLevelHumanoidEnv(gym.Env):
     metadata = {"render.modes": ["human", "rgb_array"], "video.frames_per_second": 60}
 
-    def __init__(self):
+    def __init__(self, reference_name="motion08_03"):
         self.flat_env = HumanoidBulletEnv()
 
         # self.observation_space = Box(
@@ -45,7 +45,6 @@ class LowLevelHumanoidEnv(gym.Env):
         )  # Foot contact tidak dimasukan
         self.action_space = self.flat_env.action_space
 
-        reference_name = "motion09_03"
         basePath = "~/GitHub/TA/Relative_Joints_CSV"
         self.joints_df = pd.read_csv(
             "{}/{}JointPosRad.csv".format(basePath, reference_name)
@@ -220,12 +219,12 @@ class LowLevelHumanoidEnv(gym.Env):
         if self.frame == 0:
             self.starting_ep_pos = self.robot_pos.copy()
 
-    def reset(self):
+    def reset(self, startFrame=None, resetYaw=0, startFromRef=True):
         # Insialisasi dengan posisi awal random sesuai referensi
-        # return self.resetWithYaw(self.rng.integers(-10, 10))
-        # return self.resetFromFrame(startFrame=self.rng.integers(0, self.max_frame-5), resetYaw=self.rng.integers(-180, 180))
         return self.resetFromFrame(
-            startFrame=self.rng.integers(0, self.max_frame - 5), resetYaw=0
+            startFrame=self.rng.integers(0, self.max_frame - 5) if startFrame == None else startFrame,
+            resetYaw=resetYaw,
+            startFromRef=startFromRef
         )
 
     def setWalkTarget(self, x, y):
@@ -242,7 +241,7 @@ class LowLevelHumanoidEnv(gym.Env):
 
         return np.array([randomX, randomY, z])
 
-    def resetFromFrame(self, startFrame=0, resetYaw=0):
+    def resetFromFrame(self, startFrame=0, resetYaw=0, startFromRef=True):
         self.flat_env.reset()
 
         self.cur_timestep = 0
@@ -254,12 +253,13 @@ class LowLevelHumanoidEnv(gym.Env):
         else:
             self.target = self.getRandomVec(self.targetLen, 0)
 
-        self.frame = startFrame
-        self.setJointsOrientation(self.frame)
+        if(startFromRef):
+            self.frame = startFrame
+            self.setJointsOrientation(self.frame)
 
         # Posisi awal robot
         # robotPos = self.getRandomVec(3, 1.15)
-        robotPos = np.array([0, 0, 1.15])
+        robotPos = np.array([0, 0, 1.17])
         self.robot_pos = np.array([robotPos[0], robotPos[1], 0])
         self.last_robotPos = self.robot_pos.copy()
         self.starting_robot_pos = self.robot_pos.copy()
@@ -287,10 +287,11 @@ class LowLevelHumanoidEnv(gym.Env):
         # starting_ep_pos = rightFootPosActual - rightFootPosRef
         self.starting_ep_pos = rightFootPosActual - rightFootPosRef
 
-        rightLegPosRef = rotDeg.apply(getJointPos(endPointRef, "RightLeg"))
-        rightLegPosRefNext = rotDeg.apply(getJointPos(endPointRefNext, "RightLeg"))
-        startingVelocity = (rightLegPosRefNext - rightLegPosRef) / 0.0165
-        self.flat_env.robot.robot_body.reset_velocity(linearVelocity=startingVelocity)
+        if(startFromRef):
+            rightLegPosRef = rotDeg.apply(getJointPos(endPointRef, "RightLeg"))
+            rightLegPosRefNext = rotDeg.apply(getJointPos(endPointRefNext, "RightLeg"))
+            startingVelocity = (rightLegPosRefNext - rightLegPosRef) / 0.0165
+            self.flat_env.robot.robot_body.reset_velocity(linearVelocity=startingVelocity)
 
         self.initReward()
 
@@ -335,8 +336,10 @@ class LowLevelHumanoidEnv(gym.Env):
 
         score = -deltaJoints / self.joint_weight_sum
         if(useExp):
-            score = np.exp(score)
-            return (score * 3) - 2.3
+            # score = np.exp(score)
+            # return (score * 3) - 2.3
+            score = np.exp(4 * score)
+            return score
         return score
 
     def calcJointVelScore(self, useExp=False):
@@ -354,8 +357,9 @@ class LowLevelHumanoidEnv(gym.Env):
 
         score = -deltaVel / self.joint_vel_weight_sum
         if(useExp):
-            score = np.exp(score)
-            return (score * 3) - 1.8
+            # score = np.exp(score)
+            # return (score * 3) - 1.8
+            score = np.exp(score / 2)
         return score
 
     def calcEndPointScore(self, useExp=False):
@@ -379,8 +383,9 @@ class LowLevelHumanoidEnv(gym.Env):
 
         score = -deltaEndPoint / self.end_point_weight_sum
         if(useExp):
-            score = np.exp(10 * score)
-            return 2 * score - 0.5
+            # score = np.exp(10 * score)
+            # return 2 * score - 0.5
+            score = np.exp(3 * score)
         return score
 
     def calcJumpReward(self, obs):
@@ -428,7 +433,17 @@ class LowLevelHumanoidEnv(gym.Env):
             drawLine(self.target, newTarget, [1, 0, 0], lifeTime=0)
             self.starting_robot_pos = self.target.copy()
             self.target = newTarget
-            self.starting_ep_pos = self.robot_pos.copy()
+
+            # Fix posisi starting ep pos
+            distRobotStartEP = np.linalg.norm(self.robot_pos - self.starting_ep_pos)
+            normVecRobotTarget = self.target - self.robot_pos
+            normVecRobotTarget /= np.linalg.norm(normVecRobotTarget)
+            self.starting_ep_pos = self.robot_pos.copy() + distRobotStartEP * -normVecRobotTarget
+            
+            # Reset lowTargetScore agar delta_lowTargetScore tidak lompat jauh nilainya
+            self.lowTargetScore = -np.linalg.norm(
+                self.target - self.starting_robot_pos
+            )
 
         # Reassign highLevelDegTarget
         vRobotTarget = self.target - self.robot_pos
@@ -468,7 +483,7 @@ class LowLevelHumanoidEnv(gym.Env):
 
     def checkIfDone(self):
         isAlive = self.aliveReward > 0
-        isNearTarget = np.linalg.norm(self.target - self.robot_pos) <= self.targetLen + 1
+        isNearTarget = np.linalg.norm(self.target - self.robot_pos) <= np.linalg.norm(self.target - self.starting_robot_pos) + 1
         return not(isAlive and isNearTarget)
 
     def low_level_step(self, action):
@@ -498,7 +513,7 @@ class LowLevelHumanoidEnv(gym.Env):
             self.bodyPostureScore,
         ]
 
-        rewardWeight = [0.1, 0.1, 0.2, 0.1, 0.2, 0.1, 0.2]
+        rewardWeight = [0.1, 0.2, 0.2, 0.1, 0.4, 0.1, 0.2]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):

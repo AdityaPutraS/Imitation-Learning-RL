@@ -41,7 +41,7 @@ checkpoint_num = "2400"
 resume = False
 
 tune.run(
-    PGTrainer,
+    PPOTrainer,
     name="HWalk_Low_Mimic",
     # resume=resume,
     restore="/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
@@ -53,5 +53,5 @@ tune.run(
     checkpoint_freq=10,
     checkpoint_score_attr="episode_reward_mean",
     stop={"episode_reward_mean": TARGET_REWARD},
-    config=config_low_pg,
+    config=config_low,
 )

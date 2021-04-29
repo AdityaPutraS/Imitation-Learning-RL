@@ -9,7 +9,7 @@ from ray.rllib.agents.ddpg.apex import APEX_DDPG_DEFAULT_CONFIG
 
 def make_env_low(env_config):
     import pybullet_envs
-    return LowLevelHumanoidEnv()
+    return LowLevelHumanoidEnv(reference_name="motion09_03")
 
 
 def make_env_hier(env_config):
@@ -43,7 +43,7 @@ config_low = {
     "sgd_minibatch_size": 512,
     "train_batch_size": 6000,
     "model": {
-        "fcnet_hiddens": [256, 128],
+        "fcnet_hiddens": [256, 256],
         "fcnet_activation": "tanh",
         "free_log_std": True,
     },
@@ -213,10 +213,10 @@ config_hier = {
     "clip_param": 0.2,
     "kl_coeff": 1.0,
     "num_sgd_iter": 20,
-    "lr": 0.0005,
+    "lr": 0.00005,
     "vf_clip_param": 10,
-    "sgd_minibatch_size": 12000,
-    "train_batch_size": 36000,
+    "sgd_minibatch_size": 512,
+    "train_batch_size": 6000,
     "batch_mode": "complete_episodes",
     "observation_filter": "NoFilter",
 }

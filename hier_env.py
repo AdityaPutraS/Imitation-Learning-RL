@@ -602,7 +602,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
     def checkIfDone(self):
         isAlive = self.aliveReward > 0
         isNearTarget = (
-            np.linalg.norm(self.target - self.robot_pos) <= self.targetLen + 1
+            np.linalg.norm(self.target - self.robot_pos) <= np.linalg.norm(self.target - self.starting_robot_pos) + 1
         )
         return not (isAlive and isNearTarget)
         # return False
@@ -651,7 +651,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         if f_done or (self.cur_timestep >= self.max_timestep):
             self.updateRewardHigh()
             done["__all__"] = True
-            rew["high_level_agent"] = self.delta_highTargetScore * 0.2 + self.driftScore * 0.8
+            rew["high_level_agent"] = self.delta_highTargetScore * 0.1 + self.driftScore * 0.9
             obs["high_level_agent"] = self.getHighLevelObs()
             obs[self.low_level_agent_id] = self.getLowLevelObs()
             rew[self.low_level_agent_id] = totalReward
@@ -659,7 +659,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         elif self.steps_remaining_at_level <= 0:
             self.updateRewardHigh()
             # done[self.low_level_agent_id] = True
-            rew["high_level_agent"] = self.delta_highTargetScore * 0.2 + self.driftScore * 0.8
+            rew["high_level_agent"] = self.delta_highTargetScore * 0.1 + self.driftScore * 0.9
             obs["high_level_agent"] = self.getHighLevelObs()
             self.cumulative_aliveReward = 0
         else:

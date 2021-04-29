@@ -31,9 +31,13 @@ checkpoint_num = "2580"
 
 
 experiment_name_hier = "HWalk_Hier_Mimic"
-experiment_id_hier = "train_HumanoidBulletEnvHier-v0_a56d7_00000_0_2021-04-26_13-02-48"
+experiment_id_hier = "train_HumanoidBulletEnvHier-v0_8b503_00000_0_2021-04-28_14-25-36"
 checkpoint_num_hier = "1"
 
+# Cara train:
+# Load model low level terlebih dahulu dengan set resumeFromCheckpoint=False,  useModelFromLowLevelTrain=True
+# Tunggu hingga ke save 1 iterasi
+# Train ulang dengan resumeFromCheckpoint=True,  useModelFromLowLevelTrain=False
 resumeFromCheckpoint = True
 useModelFromLowLevelTrain = False
 

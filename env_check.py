@@ -124,7 +124,7 @@ if __name__ == "__main__":
             i += 1
             done = False
             # env.render()
-            observation = env.resetFromFrame(startFrame=0)
+            observation = env.resetFromFrame(startFrame=34)
             # drawAxis()
             pause = False
 
@@ -166,5 +166,5 @@ if __name__ == "__main__":
     env.close()
     ray.shutdown()
 
-    with open('Log/experiment_data_low.json', 'w') as fp:
+    with open('Log/experiment_data_low2.json', 'w') as fp:
         json.dump(experiment_data, fp)
