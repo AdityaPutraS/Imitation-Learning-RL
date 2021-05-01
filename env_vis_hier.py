@@ -48,8 +48,10 @@ if __name__ == "__main__":
     
     agent = PPOTrainer(config_hier)
     experiment_name = "HWalk_Hier_Mimic"
-    experiment_id = "train_HumanoidBulletEnvHier-v0_ddce5_00000_0_2021-04-27_20-12-42"
-    checkpoint_num = "1660"
+    # experiment_id = "train_HumanoidBulletEnvHier-v0_ddce5_00000_0_2021-04-27_20-12-42"
+    # checkpoint_num = "1660"
+    experiment_id = "train_HumanoidBulletEnvHier-v0_0cbfa_00000_0_2021-05-01_17-03-09"
+    checkpoint_num = "1320"
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name, experiment_id, checkpoint_num, checkpoint_num, checkpoint_num
@@ -85,6 +87,7 @@ if __name__ == "__main__":
     # agent.get_policy("low_level_policy").set_state(importedPolicy)
 
     env = HierarchicalHumanoidEnv()
+    env.max_timestep = 100000
     env.usePredefinedTarget = True
 
     # Kotak
@@ -96,23 +99,23 @@ if __name__ == "__main__":
     # ])
 
     # M
-    env.predefinedTarget = np.array([
-        [5, -1, 0],
-        [0, -2, 0],
-        [5, -3, 0],
-        [0, -4, 0],
-        [0, 0, 0]
-    ])
+    # env.predefinedTarget = np.array([
+    #     [5, -1, 0],
+    #     [0, -2, 0],
+    #     [5, -3, 0],
+    #     [0, -4, 0],
+    #     [0, 0, 0]
+    # ])
 
     # Segi Enam
-    # env.predefinedTarget = np.array([
-    #     [0, 5, 0],
-    #     [4.33, 2.5, 0],
-    #     [4.33, -2.5, 0],
-    #     [0, -5, 0],
-    #     [-4.33, -2.5, 0],
-    #     [-4.33, 2.5, 0],
-    # ])
+    env.predefinedTarget = np.array([
+        [0, 5, 0],
+        [4.33, 2.5, 0],
+        [4.33, -2.5, 0],
+        [0, -5, 0],
+        [-4.33, -2.5, 0],
+        [-4.33, 2.5, 0],
+    ])
 
     # Putar 180 Derajat
     # env.predefinedTarget = np.array([
@@ -128,14 +131,16 @@ if __name__ == "__main__":
     eKey = ord("e")
 
     doneAll = False
+    logStarted = False
     while not doneAll:
         done = False
         env.render()
         observation = env.resetFromFrame(startFrame=50)
         drawAxis()
+        if(not(logStarted)):
+            pybullet.startStateLogging(pybullet.STATE_LOGGING_VIDEO_MP4, "./out/video/hier_{}_{}.mp4".format(experiment_id[-19:], checkpoint_num))
+            logStarted = True
         pause = True
-
-        drift = []
         while not done and not doneAll:
             action = dict()
             if(not pause):
@@ -145,8 +150,8 @@ if __name__ == "__main__":
                         # pause = True
                 else:
                     action[env.low_level_agent_id] = agent.compute_action(observation[env.low_level_agent_id], policy_id='low_level_policy')
-                observation, reward, f_done, info = env.step(action)
-                done = f_done['__all__'] == True
+                observation, reward, f_done, info = env.step(action, debug=True)
+                # done = f_done['__all__'] == True
                 # if(f_done['__all__']):
                     # print("Done")
             targetHL = np.array([

@@ -398,7 +398,9 @@ PPO_HumanoidBulletEnv-v0-Low_24370_00000_0_2021-04-24_08-43-52:
 	global update:
 		
 	hasil:	Lama train, bisa jalan tapi lambat, masih belum bisa belok
-	
+========================================================================================
+Final
+========================================================================================
 PPO_HumanoidBulletEnv-v0-Low_ad0f0_00000_0_2021-04-25_06-44-49
 PPO_HumanoidBulletEnv-v0-Low_807f6_00000_0_2021-04-25_08-45-16
 PPO_HumanoidBulletEnv-v0-Low_51a58_00000_0_2021-04-25_19-06-43:
@@ -423,7 +425,8 @@ PPO_HumanoidBulletEnv-v0-Low_51a58_00000_0_2021-04-25_19-06-43:
 		
 	hasil:	Bisa jalan, tidak bisa belok, kadang lagi jalan bisa jatuh
 	
-PPO_HumanoidBulletEnv-v0-Low_166df_00000_0_2021-04-25_19-33-42:
+PPO_HumanoidBulletEnv-v0-Low_166df_00000_0_2021-04-25_19-33-42
+PPO_HumanoidBulletEnv-v0-Low_3ecbe_00000_0_2021-04-27_00-27-08:
 	note:	
 		skip frame = 1
 		motion09_03
@@ -435,7 +438,7 @@ PPO_HumanoidBulletEnv-v0-Low_166df_00000_0_2021-04-25_19-33-42:
 				sgd minibatch = 512
 				train batch = 6000
 				model 256,128
-			()
+			(00-27-08)
 				lr = 0.0005
 				sgd minibatch = 512
 				train batch = 6000
@@ -446,3 +449,192 @@ PPO_HumanoidBulletEnv-v0-Low_166df_00000_0_2021-04-25_19-33-42:
 		
 	hasil:	
 		(19-33-42) Best so far, jalan bagus, bisa belok tajam, gerakan tidak terlalu aneh
+		(00-27-08) Bisa jalan, tapi masih belum terlalu bagus, butuh train lebih lama sepertinya
+
+PG_HumanoidBulletEnv-v0-Low_d6346_00000_0_2021-04-26_09-07-57: 
+	note:
+		reward menggunakan exp
+		(09-07-57)
+			lr = 0.00005
+			train batch size = 6000
+			rollout length = 200
+		(15-25-45)
+			lr = 0.0005
+			train batch size = 6000
+			rollout length = 200
+		(15-39-16)
+			lr = 0.005
+			train batch size = 6000
+			rollout length = 200
+		(15-54-52)
+			lr = 0.005
+			train batch size = 6000
+			rollout length = 10
+		(16-03-19)
+			lr = 0.05
+			train batch size = 6000
+			rollout length = 100
+		(16-10-51) => Best
+			lr = 0.005
+			train batch size = 300
+			rollout length = 200
+	hasil: 
+		
+
+A2C_HumanoidBulletEnv-v0-Low_9f2e6_00000_0_2021-04-26_23-18-15:
+	note:
+		lr 0.005 > 0.001 > 0.0005 > 0.05
+		vl loss coeff 0.5 > 1.0
+		entropy coeff 0 > 0.01
+		rollout length 10 > 50 > 200
+		(20-50-16)
+			lr = 0.0005
+			vf_loss_coeff = 1.0
+			entropy coeff = 0.0
+			train batch size = 6000
+			rollout length = 200
+		(23-18-15)
+			lr = 0.005
+			vf_loss_coeff = 1.0
+			entropy coeff = 0.0
+			train batch size = 6000
+			rollout length = 200
+		(09-48-17)
+			lr = 0.005
+			vf_loss_coeff = 1.0
+			entropy coeff = 0.01
+			train batch size = 6000
+			rollout length = 200
+		(09-55-24)
+			lr = 0.005
+			vf_loss_coeff = 0.5
+			entropy coeff = 0.0
+			train batch size = 6000
+			rollout length = 200
+		(10-04-37)
+			lr = 0.05
+			vf_loss_coeff = 0.5
+			entropy coeff = 0.0
+			train batch size = 6000
+			rollout length = 200
+		(10-07-59)
+			lr = 0.001
+			vf_loss_coeff = 0.5
+			entropy coeff = 0.0
+			train batch size = 6000
+			rollout length = 200
+		(10-19-12)
+			lr = 0.005
+			vf_loss_coeff = 1.0
+			entropy coeff = 0.0
+			train batch size = 6000
+			rollout length = 50
+		(10-24-53) => Best
+			lr = 0.005
+			vf_loss_coeff = 1.0
+			entropy coeff = 0.0
+			train batch size = 6000
+			rollout length = 10
+		(10-38-32)
+			lr = 0.005
+			vf_loss_coeff = 1.0
+			entropy coeff = 0.01
+			train batch size = 6000
+			rollout length = 10
+		(10-46-09)
+			lr = 0.005
+			vf_loss_coeff = 1.0
+			entropy coeff = 0.0
+			train batch size = 3000
+			rollout length = 10
+		(17-25-22)
+			Parameter sama dengan 10-24-53
+		hasil:
+			10-24-53 butuh di train lebih lanjut
+
+PPO_HumanoidBulletEnv-v0-Low_0bb32_00000_0_2021-04-28_18-46-53:
+	note:	
+		skip frame = 1
+		motion08_03
+		reward menggunakan exp dan tidak menggunakan delta pada reward akhir (kecuali low target)
+		Tidak menggunakan joint velocity reward
+
+		lr = 0.00005
+		sgd minibatch = 512
+		train batch = 6000
+		model 256,128
+			
+	update:
+		
+	global update:
+		
+	hasil:	lumayan bisa jalan, sering jatuh ketika belok
+	
+PPO_HumanoidBulletEnv-v0-Low_6220e_00000_0_2021-04-29_08-25-21:
+	note:	
+		skip frame = 1
+		motion08_03
+		reward menggunakan exp dan tidak menggunakan delta pada reward akhir (kecuali low target)
+		Tidak menggunakan joint velocity reward
+
+		lr = 0.00005
+		sgd minibatch = 512
+		train batch = 6000
+			
+	update:
+		fix starting ep pos ketika target berubah
+		fix low target score ketika target berubah
+	global update:
+		model 256,128 => 256,256
+
+	hasil:	jatuh ketika belok tapi lebih bagus jalannya dibanding 18-46-53
+	
+PPO_HumanoidBulletEnv-v0-Low_5632e_00000_0_2021-04-29_17-21-53
+PPO_HumanoidBulletEnv-v0-Low_0e400_00000_0_2021-04-29_21-30-25
+PPO_HumanoidBulletEnv-v0-Low_d3ab5_00000_0_2021-04-30_07-37-14
+PPO_HumanoidBulletEnv-v0-Low_7cae9_00000_0_2021-04-30_21-18-00
+PPO_HumanoidBulletEnv-v0-Low_6d114_00000_0_2021-04-30_23-26-25:
+	note:	
+		skip frame = 1
+		motion08_03
+		reward menggunakan exp dan tidak menggunakan delta pada reward akhir (kecuali low target)
+		Tidak menggunakan joint velocity reward
+
+		lr = 0.00005
+		sgd minibatch = 512
+		train batch = 6000
+		model 256,256	
+		
+		eksperimen:
+			(17-21-53) Dengan deltaVelJoints
+			(21-30-25) Tanpa VelJoints, weight joint limit 0.1 => 0.5, weight end point 0.1 => 0.2
+			(07-37-14) Motion 08_03 => 09_03, weight joint limit 0.5 => 0.4
+			(21-18-00) Reward end point di nonaktifkan
+			(23-26-25) weight deltaJoint 0.1 => 1
+			(07-26-01) Tambah weight vel joint, rewardWeight dinormalisasi agar sumnya 1, awalnya
+			[1, 1, 0.2, 0.1, 0.4, 0.1, 0.2] jadi [0.34, 0.33, 0.067, 0.033, 0.13, 0.033, 0.067]
+	update:
+		rumus joint score 3e^-x -2.3 menjadi e^-4x
+		rumus joint vel score 3e^-x -1.8 menjadi e^-x/2
+		rumus endpoint score 2e^-10x - 0.5 menjadi e^-3x
+		weight reward =
+			reward = [
+			    self.deltaJoints,
+			    self.deltaVelJoints,
+			    self.deltaEndPoints,
+			    self.delta_lowTargetScore,
+			    self.electricityScore,
+			    self.jointLimitScore,
+			    self.aliveReward,
+			    self.bodyPostureScore,
+			]
+			rewardWeight = [0.1, 0.1, 0.1, 0.2, 0.1, 0.1, 0.1, 0.2]
+	global update:
+		
+
+	hasil:	(17-21-53) kaki sangat lurus, lutut jarang ditekuk, aneh
+		(21-30-25) Sangat bagus, badannya sering bergetar, tapi tidak jatuh ketika disuruh berputar 180 derajat
+		(07-37-14) Lebih bagus dari 21-30-25
+		(27-18-00) Butuh evaluasi lebih lanjut, terlihat bisa jalan
+		(23-26-25) Sangat sangat bagus, best, jalan cepat, badan tidak bergetar
+		(07-26-01) Sama saja, namun driftnya lebih besar dari 23-26-25

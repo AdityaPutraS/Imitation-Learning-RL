@@ -15,6 +15,8 @@ from ray.rllib.env import MultiAgentEnv
 from scipy.spatial.transform import Rotation as R
 from math_util import rotFrom2Vec
 
+# from humanoid import Humanoid
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,6 +37,7 @@ class LowLevelHumanoidEnv(gym.Env):
     metadata = {"render.modes": ["human", "rgb_array"], "video.frames_per_second": 60}
 
     def __init__(self, reference_name="motion08_03"):
+        # self.flat_env = HumanoidBulletEnv(robot=Humanoid())
         self.flat_env = HumanoidBulletEnv()
 
         # self.observation_space = Box(
@@ -505,7 +508,7 @@ class LowLevelHumanoidEnv(gym.Env):
 
         reward = [
             self.deltaJoints,
-            self.deltaEndPoints,
+            self.deltaVelJoints,
             self.delta_lowTargetScore,
             self.electricityScore,
             self.jointLimitScore,
@@ -513,7 +516,8 @@ class LowLevelHumanoidEnv(gym.Env):
             self.bodyPostureScore,
         ]
 
-        rewardWeight = [0.1, 0.2, 0.2, 0.1, 0.4, 0.1, 0.2]
+        # rewardWeight = [1, 1, 0.2, 0.1, 0.4, 0.1, 0.2]
+        rewardWeight = [0.34, 0.33, 0.067, 0.033, 0.13, 0.033, 0.067]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):

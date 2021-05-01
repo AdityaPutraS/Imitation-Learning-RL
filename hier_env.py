@@ -239,11 +239,12 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         if self.selected_motion_frame == 0:
             self.starting_ep_pos = self.robot_pos.copy()
 
-    def reset(self):
+    def reset(self, startFrame=None, startFromRef=True):
         # Insialisasi dengan posisi awal random sesuai referensi
         return self.resetFromFrame(
-            startFrame=self.rng.integers(0, self.max_frame[self.selected_motion] - 5),
+            startFrame=self.rng.integers(0, self.max_frame[self.selected_motion] - 5) if startFrame == None else startFrame,
             resetYaw=self.rng.integers(-180, 180),
+            startFromRef=True
         )
 
     def setWalkTarget(self, x, y):
@@ -260,7 +261,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         return np.array([randomX, randomY, z])
 
-    def resetFromFrame(self, startFrame=0, resetYaw=0):
+    def resetFromFrame(self, startFrame=0, resetYaw=0, startFromRef=True):
         self.flat_env.reset()
 
         self.cur_timestep = 0
@@ -274,9 +275,10 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         self.setWalkTarget(self.target[0], self.target[1])
 
-        self.selected_motion = 1  # 0 = 08_03, 1 = 09_03
-        self.selected_motion_frame = startFrame
-        self.setJointsOrientation(self.selected_motion, self.selected_motion_frame)
+        if(startFromRef):
+            self.selected_motion = 1  # 0 = 08_03, 1 = 09_03
+            self.selected_motion_frame = startFrame
+            self.setJointsOrientation(self.selected_motion, self.selected_motion_frame)
 
         # Posisi awal robot
         # robotPos = self.getRandomVec(3, 1.15)
@@ -312,10 +314,11 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         # starting_ep_pos = rightFootPosActual - rightFootPosRef
         self.starting_ep_pos = rightFootPosActual - rightFootPosRef
 
-        rightLegPosRef = rotDeg.apply(getJointPos(endPointRef, "RightLeg"))
-        rightLegPosRefNext = rotDeg.apply(getJointPos(endPointRefNext, "RightLeg"))
-        startingVelocity = (rightLegPosRefNext - rightLegPosRef) / 0.0165
-        self.flat_env.robot.robot_body.reset_velocity(linearVelocity=startingVelocity)
+        if(startFromRef):
+            rightLegPosRef = rotDeg.apply(getJointPos(endPointRef, "RightLeg"))
+            rightLegPosRefNext = rotDeg.apply(getJointPos(endPointRefNext, "RightLeg"))
+            startingVelocity = (rightLegPosRefNext - rightLegPosRef) / 0.0165
+            self.flat_env.robot.robot_body.reset_velocity(linearVelocity=startingVelocity)
 
         self.initReward()
 
@@ -368,7 +371,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         # Tidak usah berikan info feet contact
         return np.hstack((self.cur_obs[:1], degTarget, degStart, self.cur_obs[3:-2]))
 
-    def step(self, action_dict):
+    def step(self, action_dict, debug=False):
         assert len(action_dict) == 1, action_dict
 
         body_xyz = self.flat_env.robot.body_xyz
@@ -377,9 +380,9 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.robot_pos[2] = 0
 
         if "high_level_agent" in action_dict:
-            return self.high_level_step(action_dict["high_level_agent"])
+            return self.high_level_step(action_dict["high_level_agent"], debug=debug)
         else:
-            return self.low_level_step(list(action_dict.values())[0])
+            return self.low_level_step(list(action_dict.values())[0], debug=debug)
 
     def calcJointScore(self, useExp=False):
         deltaJoints = 0
@@ -398,8 +401,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         score = -deltaJoints / self.joint_weight_sum
         if useExp:
-            score = np.exp(score)
-            return (score * 3) - 2.3
+            score = np.exp(4 * score)
         return score
 
     def calcJointVelScore(self, useExp=False):
@@ -419,8 +421,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         score = -deltaVel / self.joint_vel_weight_sum
         if useExp:
-            score = np.exp(score)
-            return (score * 3) - 1.8
+            score = np.exp(score / 2)
         return score
 
     def calcEndPointScore(self, useExp=False):
@@ -444,8 +445,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         score = -deltaEndPoint / self.end_point_weight_sum
         if useExp:
-            score = np.exp(10 * score)
-            return 2 * score - 0.5
+            score = np.exp(3 * score)
         return score
 
     def calcHighLevelTargetScore(self):
@@ -558,7 +558,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.cumulative_driftScore = 0
         # print(self.delta_highTargetScore, self.highTargetScore, self.driftScore)
 
-    def high_level_step(self, action):
+    def high_level_step(self, action, debug=False):
         # Map sudut agar berada di sekitar -45 s/d 45 derajat
         actionDegree = np.rad2deg(np.arctan2(action[1], action[0]))
         _, _, yaw = self.flat_env.robot.robot_body.pose().rpy()
@@ -607,7 +607,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         return not (isAlive and isNearTarget)
         # return False
 
-    def low_level_step(self, action):
+    def low_level_step(self, action, debug=False):
         self.steps_remaining_at_level -= 1
 
         # Step in the actual env
@@ -623,7 +623,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         reward = [
             self.deltaJoints,
-            self.deltaEndPoints,
+            self.deltaVelJoints,
             self.delta_lowTargetScore,
             self.electricityScore,
             self.jointLimitScore,
@@ -631,7 +631,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
             self.bodyPostureScore,
         ]
 
-        rewardWeight = [0.1, 0.1, 0.2, 0.1, 0.2, 0.1, 0.2]
+        rewardWeight = [0.34, 0.33, 0.067, 0.033, 0.13, 0.033, 0.067]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):
@@ -641,12 +641,14 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         self.checkTarget()
 
-        # self.drawDebugRobotPosLine()
+        self.drawDebugRobotPosLine()
 
         rew, obs = dict(), dict()
         # Handle env termination & transitions back to higher level
         done = {"__all__": False}
-        f_done = self.checkIfDone()
+        f_done = False
+        if(not debug):
+            f_done = self.checkIfDone()
         self.cur_timestep += 1
         if f_done or (self.cur_timestep >= self.max_timestep):
             self.updateRewardHigh()

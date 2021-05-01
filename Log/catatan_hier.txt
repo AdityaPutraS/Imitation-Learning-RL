@@ -202,11 +202,110 @@ train_HumanoidBulletEnvHier-v0_ad955_00000_0_2021-04-20_13-24-28:
 ==> Kembali ke low level untuk di train ulang
 
 train_HumanoidBulletEnvHier-v0_61e86_00000_0_2021-04-21_15-51-29 (BASE)
-train_HumanoidBulletEnvHier-v0_906d4_00000_0_2021-04-21_15-52-47:
+train_HumanoidBulletEnvHier-v0_906d4_00000_0_2021-04-21_15-52-47
+train_HumanoidBulletEnvHier-v0_838c4_00000_0_2021-04-21_18-37-04:
 	note:
 		low level model dari PPO_HumanoidBulletEnvLow-v0_71287_00000_0_2021-04-21_08-35-16 iterasi 3700
 	update:
 		tambah body posture reward untuk low level
 	global update:
 	
-	hasil: (15-52-47)
+	hasil:	(15-52-47) Lumayan tapi masih kurang
+		(18-37-04) Terlalu lama train, hasil iterasi 1770 lebih jelek dari iterasi 970an
+		
+train_HumanoidBulletEnvHier-v0_61e86_00000_0_2021-04-21_15-51-29 (BASE)
+train_HumanoidBulletEnvHier-v0_dd669_00000_0_2021-04-22_16-15-14:
+	note:
+		low level model dari PPO_HumanoidBulletEnvLow-v0_71287_00000_0_2021-04-21_08-35-16 iterasi 3700
+		(16-15-14) hanya mentrain high level saja
+	update:
+		tambah drift score untuk high level, tujuannya agar robot tetap berada dalam jalur yang ditentukan
+		(20-23-08) Tambah sudut robot ke starting_robot_pos kedalam observasi high level 
+	global update:
+	
+	hasil:	(16-15-14) Lumayan bagus, drift tidak terlalu besar
+	
+train_HumanoidBulletEnvHier-v0_61e86_00000_0_2021-04-21_15-51-29 (BASE)
+train_HumanoidBulletEnvHier-v0_7eecc_00000_0_2021-04-22_20-23-08:
+	note:
+		low level model dari PPO_HumanoidBulletEnvLow-v0_71287_00000_0_2021-04-21_08-35-16 iterasi 3700
+		(20-23-08) Low level dan high level di train
+		
+	update:
+		perhitungan drift score diperbaiki, sebelumnya starting robot pos mengacu ke posisi robot terakhir saat target berganti, seharusnya mengacu ke target sebelumnya
+	global update:
+
+	hasil:	(20-23-08) mengikuti target, drift besar, kurang stabil
+	
+train_HumanoidBulletEnvHier-v0_f8068_00000_0_2021-04-23_00-08-25 (BASE)
+train_HumanoidBulletEnvHier-v0_49bc9_00000_0_2021-04-23_00-10-42:
+	note:
+		low level model dari PPO_HumanoidBulletEnvLow-v0_71287_00000_0_2021-04-21_08-35-16 iterasi 3700
+		(00-10-42) Hanya high level yang di train
+		
+	update:
+		
+	global update:
+		free log std high level diset ke True
+
+	hasil:	(00-10-42) Lumayan bagus, jika target ada di sudut yang ekstrim robot akan jatuh / berputar dengan drift yang besar
+	
+train_HumanoidBulletEnvHier-v0_a56d7_00000_0_2021-04-26_13-02-48
+train_HumanoidBulletEnvHier-v0_89e2b_00000_0_2021-04-26_15-39-31:
+	note: 
+		low level model 256, 128
+		PPO_HumanoidBulletEnv-v0-Low_166df_00000_0_2021-04-25_19-33-42 checkpoint_2580 (BASE LOW)
+		train_HumanoidBulletEnvHier-v0_a56d7_00000_0_2021-04-26_13-02-48 (BASE HIER)
+	hasil: (15-39-51) Lumayan bagus, tidak terlalu ngedrift
+	
+train_HumanoidBulletEnvHier-v0_a56d7_00000_0_2021-04-26_13-02-48
+train_HumanoidBulletEnvHier-v0_ddce5_00000_0_2021-04-27_20-12-42:
+	note: 
+		low level model 256, 128
+		PPO_HumanoidBulletEnv-v0-Low_166df_00000_0_2021-04-25_19-33-42 checkpoint_2580 (BASE LOW)
+		train_HumanoidBulletEnvHier-v0_a56d7_00000_0_2021-04-26_13-02-48 (BASE HIER)
+	update: score drift dari exp(-3 * score) menjadi exp(-6 * score)
+		weight drift score = 0.7, high target = 0.3
+	hasil: (20-12-42) Lebih bagus daripada 15-39-51
+	
+train_HumanoidBulletEnvHier-v0_1ceff_00000_0_2021-04-28_09-14-43
+train_HumanoidBulletEnvHier-v0_62ab1_00000_0_2021-04-28_09-16-40:
+	note: 
+		low level model 256, 128
+		PPO_HumanoidBulletEnv-v0-Low_166df_00000_0_2021-04-25_19-33-42 checkpoint_2580 (BASE LOW)
+		train_HumanoidBulletEnvHier-v0_1ceff_00000_0_2021-04-28_09-14-43 (BASE HIER)
+	update: score drift dari exp(-3 * score) menjadi exp(-6 * score)
+		weight drift score = 0.7, high target = 0.3
+	global update:
+		high level model 256,128 => 64, 64, 64
+		lr 0.0005 => 0.00005
+		sgd minibatch 12000 => 512
+		train batch 36000 => 6000	
+	hasil: (09-16-40) Kurang bagus
+
+train_HumanoidBulletEnvHier-v0_8b503_00000_0_2021-04-28_14-25-36
+train_HumanoidBulletEnvHier-v0_cf27e_00000_0_2021-04-28_14-27-30:
+	note: 
+		low level model 256, 128
+		PPO_HumanoidBulletEnv-v0-Low_166df_00000_0_2021-04-25_19-33-42 checkpoint_2580 (BASE LOW)
+		train_HumanoidBulletEnvHier-v0_8b503_00000_0_2021-04-28_14-25-36 (BASE HIER)
+	update: weight drift score = 0.9, high target = 0.1
+	global update:
+		high level model 256,128
+		lr 0.00005
+		sgd minibatch 512
+		train batch 6000	
+	hasil: (14-27-30) Skip, ganti low level model
+	
+============================================
+Low level model tidak menggunakan endpoint reward, hasil lebih bagus, lebih stabil dari sebelumnya
+============================================
+train_HumanoidBulletEnvHier-v0_0cbfa_00000_0_2021-05-01_17-03-09:
+	note:
+		PPO_HumanoidBulletEnv-v0-Low_6d114_00000_0_2021-04-30_23-26-25 checkpoint_1690(BASE LOW)
+		train_HumanoidBulletEnvHier-v0_e1686_00000_0_2021-05-01_17-01-56 (BASE HIER)
+	update: drift score = 0.9, high target = 0.1
+	global update:
+	
+	hasil: Sangat bagus, drift minimal dan robot tidak jatuh
+		

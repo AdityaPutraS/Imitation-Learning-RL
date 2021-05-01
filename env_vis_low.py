@@ -52,10 +52,19 @@ if __name__ == "__main__":
 
     agent = PPOTrainer(config_low)
     experiment_name = "HWalk_Low_Mimic"
-    experiment_id = "PPO_HumanoidBulletEnv-v0-Low_0e400_00000_0_2021-04-29_21-30-25"
-    checkpoint_num = "2190"
+    # experiment_id = "PPO_HumanoidBulletEnv-v0-Low_0e400_00000_0_2021-04-29_21-30-25"
+    # checkpoint_num = "2190"
     # experiment_id = "PPO_HumanoidBulletEnv-v0-Low_166df_00000_0_2021-04-25_19-33-42"
     # checkpoint_num = "2580"
+    # experiment_id = "PPO_HumanoidBulletEnv-v0-Low_d3ab5_00000_0_2021-04-30_07-37-14"
+    # checkpoint_num = "1860"
+
+    # Tanpa endpoint reward
+    experiment_id = "PPO_HumanoidBulletEnv-v0-Low_6d114_00000_0_2021-04-30_23-26-25"
+    checkpoint_num = "1690"
+    # experiment_id = "PPO_HumanoidBulletEnv-v0-Low_6cf56_00000_0_2021-05-01_07-26-01"
+    # checkpoint_num = "900"
+
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name, experiment_id, checkpoint_num, checkpoint_num
@@ -64,7 +73,8 @@ if __name__ == "__main__":
 
     # 29_21-30-25 (motion08_03)
     # 25_19-33-42 (motion09_03)
-    motion_used = "motion08_03"
+    # motion_used = "motion08_03"
+    motion_used = "motion09_03"
     env = LowLevelHumanoidEnv(reference_name=motion_used)
     env.usePredefinedTarget = True
     
@@ -116,7 +126,7 @@ if __name__ == "__main__":
         observation = env.reset(startFrame=0, startFromRef=True)
         drawAxis()
         if(not(logStarted)):
-            pybullet.startStateLogging(pybullet.STATE_LOGGING_VIDEO_MP4, "./out/video/{}_{}.mp4".format(experiment_id[:-19], checkpoint_num))
+            pybullet.startStateLogging(pybullet.STATE_LOGGING_VIDEO_MP4, "./out/video/{}_{}.mp4".format(experiment_id[-19:], checkpoint_num))
             logStarted = True
         pause = True
 

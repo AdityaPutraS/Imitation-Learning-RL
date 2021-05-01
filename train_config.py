@@ -9,7 +9,7 @@ from ray.rllib.agents.ddpg.apex import APEX_DDPG_DEFAULT_CONFIG
 
 def make_env_low(env_config):
     import pybullet_envs
-    return LowLevelHumanoidEnv(reference_name="motion09_03")
+    return LowLevelHumanoidEnv(reference_name="motion02_04")
 
 
 def make_env_hier(env_config):
@@ -185,7 +185,7 @@ lowLevelPolicy = (
     single_env.low_level_act_space,
     {
         "model": {
-            "fcnet_hiddens": [256, 128],
+            "fcnet_hiddens": [256, 256],
             "fcnet_activation": "tanh",
             "free_log_std": True,
         },
