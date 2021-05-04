@@ -43,87 +43,72 @@ if __name__ == "__main__":
     ray.shutdown()
     ray.init(ignore_reinit_error=True)
 
-    single_env = HierarchicalHumanoidEnv()
+    env = HierarchicalHumanoidEnv()
+    env.max_timestep = 100000
+    env.usePredefinedTarget = True
 
-    
     agent = PPOTrainer(config_hier)
     experiment_name = "HWalk_Hier_Mimic"
+
+    model = input("Jenis model (08_03, 09_03): ").lower()
     # experiment_id = "train_HumanoidBulletEnvHier-v0_ddce5_00000_0_2021-04-27_20-12-42"
     # checkpoint_num = "1660"
-    experiment_id = "train_HumanoidBulletEnvHier-v0_0cbfa_00000_0_2021-05-01_17-03-09"
-    checkpoint_num = "1320"
+
+    if(model == "08_03"):
+        # Motion 08_03
+        experiment_id = "train_HumanoidBulletEnvHier-v0_88b64_00000_0_2021-05-02_12-26-15"
+        checkpoint_num = "960"
+        env.selected_motion = 0
+        print("Selesai load model motion 08_03")
+    else:
+        # Motion 09_03
+        experiment_id = "train_HumanoidBulletEnvHier-v0_0cbfa_00000_0_2021-05-01_17-03-09"
+        checkpoint_num = "1320"
+        env.selected_motion = 1
+        print("Selesai load model motion 09_03")
+
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name, experiment_id, checkpoint_num, checkpoint_num, checkpoint_num
         )
     )
 
-    # experiment_name = "HWalk_Low_Mimic"
-    # experiment_id = "PPO_HumanoidBulletEnvLow-v0_699c9_00000_0_2021-04-18_22-14-39"
-    # checkpoint_num = "1930"
-
-    # config_low["num_workers"] = 0
-    # config_low["num_envs_per_worker"] = 1
-    # config_low["num_gpus"] = 1
-    # agentLow = PPOTrainer(config_low)
-    # agentLow.restore(
-    #     "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
-    #         experiment_name, experiment_id, checkpoint_num, checkpoint_num
-    #     )
-    # )
-    # lowWeight = agentLow.get_policy().get_weights()
-    # highWeight = agent.get_policy("low_level_policy").get_weights()
-    # lowState = agentLow.get_policy().get_state()
-    # importedOptState = OrderedDict(
-    #     [
-    #         (k.replace("default_policy", "low_level_policy"), v)
-    #         for k, v in lowState["_optimizer_variables"].items()
-    #     ]
-    # )
-    # importedPolicy = {
-    #     hw: lowWeight[lw] for hw, lw in zip(highWeight.keys(), lowWeight.keys())
-    # }
-    # importedPolicy["_optimizer_variables"] = importedOptState
-    # agent.get_policy("low_level_policy").set_state(importedPolicy)
-
-    env = HierarchicalHumanoidEnv()
-    env.max_timestep = 100000
-    env.usePredefinedTarget = True
-
-    # Kotak
-    # env.predefinedTarget = np.array([
-    #     [5, 0, 0],
-    #     [5, -5, 0],
-    #     [0, -5, 0],
-    #     [0, 0, 0]
-    # ])
-
-    # M
-    # env.predefinedTarget = np.array([
-    #     [5, -1, 0],
-    #     [0, -2, 0],
-    #     [5, -3, 0],
-    #     [0, -4, 0],
-    #     [0, 0, 0]
-    # ])
-
-    # Segi Enam
-    env.predefinedTarget = np.array([
-        [0, 5, 0],
-        [4.33, 2.5, 0],
-        [4.33, -2.5, 0],
-        [0, -5, 0],
-        [-4.33, -2.5, 0],
-        [-4.33, 2.5, 0],
-    ])
-
-    # Putar 180 Derajat
-    # env.predefinedTarget = np.array([
-    #     [0, 5, 0],
-    #     [0, -5, 0],
-    #     [-5, 0, 0],
-    #     [5, 0, 0]
-    # ])
+    tipeTarget = input("Jenis target (kotak, m, segi_enam, 180): ").lower()
+    if (tipeTarget == 'kotak'):
+        # Kotak
+        env.predefinedTarget = np.array([
+            [5, 0, 0],
+            [5, -5, 0],
+            [0, -5, 0],
+            [0, 0, 0]
+        ])
+    elif (tipeTarget == 'm'):
+        # M
+        env.predefinedTarget = np.array([
+            [5, -1, 0],
+            [0, -2, 0],
+            [5, -3, 0],
+            [0, -4, 0],
+            [0, 0, 0]
+        ])
+    elif (tipeTarget == 'segi enam'):
+        # Segi Enam
+        env.predefinedTarget = np.array([
+            [0, 5, 0],
+            [4.33, 2.5, 0],
+            [4.33, -2.5, 0],
+            [0, -5, 0],
+            [-4.33, -2.5, 0],
+            [-4.33, 2.5, 0],
+        ])
+    elif (tipeTarget == '180'):
+        # Putar 180 Derajat
+        env.predefinedTarget = np.array([
+            [0, 5, 0],
+            [0, -5, 0],
+            [-5, 0, 0],
+            [5, 0, 0]
+        ])
 
     fps = 240.0
     qKey = ord("q")
@@ -138,7 +123,7 @@ if __name__ == "__main__":
         observation = env.resetFromFrame(startFrame=50)
         drawAxis()
         if(not(logStarted)):
-            pybullet.startStateLogging(pybullet.STATE_LOGGING_VIDEO_MP4, "./out/video/hier_{}_{}.mp4".format(experiment_id[-19:], checkpoint_num))
+            pybullet.startStateLogging(pybullet.STATE_LOGGING_VIDEO_MP4, "./out/video/hier_{}_{}_{}_{}.mp4".format(experiment_id[-19:], checkpoint_num, model, tipeTarget))
             logStarted = True
         pause = True
         while not done and not doneAll:
@@ -150,7 +135,7 @@ if __name__ == "__main__":
                         # pause = True
                 else:
                     action[env.low_level_agent_id] = agent.compute_action(observation[env.low_level_agent_id], policy_id='low_level_policy')
-                observation, reward, f_done, info = env.step(action, debug=True)
+                observation, reward, f_done, info = env.step(action, debug=False)
                 # done = f_done['__all__'] == True
                 # if(f_done['__all__']):
                     # print("Done")

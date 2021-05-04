@@ -15,7 +15,7 @@ from ray.rllib.env import MultiAgentEnv
 from scipy.spatial.transform import Rotation as R
 from math_util import rotFrom2Vec
 
-# from humanoid import Humanoid
+from humanoid import CustomHumanoid
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +36,12 @@ def drawLine(c1, c2, color, lifeTime=0.1):
 class LowLevelHumanoidEnv(gym.Env):
     metadata = {"render.modes": ["human", "rgb_array"], "video.frames_per_second": 60}
 
-    def __init__(self, reference_name="motion08_03"):
-        # self.flat_env = HumanoidBulletEnv(robot=Humanoid())
-        self.flat_env = HumanoidBulletEnv()
+    def __init__(self, reference_name="motion08_03", useCustomEnv=False):
+        self.useCustomEnv = useCustomEnv
+        if(useCustomEnv):
+            self.flat_env = CustomHumanoid()
+        else:
+            self.flat_env = HumanoidBulletEnv()
 
         # self.observation_space = Box(
         #     low=-np.inf, high=np.inf, shape=[1 + 5 + 17 * 2 + 2 + 8]
@@ -516,8 +519,10 @@ class LowLevelHumanoidEnv(gym.Env):
             self.bodyPostureScore,
         ]
 
-        # rewardWeight = [1, 1, 0.2, 0.1, 0.4, 0.1, 0.2]
-        rewardWeight = [0.34, 0.33, 0.067, 0.033, 0.13, 0.033, 0.067]
+        # rewardWeight = [1, 0.2, 0.1, 0.4, 0.1, 0.2] # Weight (23-26-25)
+        # rewardWeight = [0.34, 0.33, 0.067, 0.033, 0.13, 0.033, 0.067] # Weight (07-26-01)
+        # rewardWeight = [0.4 , 0.2 , 0.08, 0.04, 0.16, 0.04, 0.08] # Weight (23-32-16)
+        rewardWeight = [0.34, 0.1, 0.34, 0.034, 0.1, 0.034, 0.067] # Weight (15-06-17)
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):

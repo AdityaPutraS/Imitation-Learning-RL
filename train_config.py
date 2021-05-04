@@ -9,7 +9,7 @@ from ray.rllib.agents.ddpg.apex import APEX_DDPG_DEFAULT_CONFIG
 
 def make_env_low(env_config):
     import pybullet_envs
-    return LowLevelHumanoidEnv(reference_name="motion02_04")
+    return LowLevelHumanoidEnv(reference_name="motion09_03", useCustomEnv=False)
 
 
 def make_env_hier(env_config):
@@ -28,7 +28,7 @@ config_low = {
     "env": ENV_LOW,
     "callbacks": RewardLogCallback,
     "num_workers": 6,
-    "num_envs_per_worker": 20,
+    "num_envs_per_worker": 10,
     "log_level": "WARN",
     "num_gpus": 1,
     "monitor": True,

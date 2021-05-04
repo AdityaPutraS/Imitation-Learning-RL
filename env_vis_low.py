@@ -52,18 +52,31 @@ if __name__ == "__main__":
 
     agent = PPOTrainer(config_low)
     experiment_name = "HWalk_Low_Mimic"
-    # experiment_id = "PPO_HumanoidBulletEnv-v0-Low_0e400_00000_0_2021-04-29_21-30-25"
-    # checkpoint_num = "2190"
-    # experiment_id = "PPO_HumanoidBulletEnv-v0-Low_166df_00000_0_2021-04-25_19-33-42"
-    # checkpoint_num = "2580"
-    # experiment_id = "PPO_HumanoidBulletEnv-v0-Low_d3ab5_00000_0_2021-04-30_07-37-14"
-    # checkpoint_num = "1860"
 
+    model = input("Jenis model (08_03, 09_03, custom_env): ").lower()
+    useCustomEnv = False
     # Tanpa endpoint reward
-    experiment_id = "PPO_HumanoidBulletEnv-v0-Low_6d114_00000_0_2021-04-30_23-26-25"
-    checkpoint_num = "1690"
-    # experiment_id = "PPO_HumanoidBulletEnv-v0-Low_6cf56_00000_0_2021-05-01_07-26-01"
-    # checkpoint_num = "900"
+    if(model == '08_03'):
+        # Motion 08_03
+        experiment_id = "PPO_HumanoidBulletEnv-v0-Low_68eec_00000_0_2021-05-01_23-32-16"
+        checkpoint_num = "1610"
+        motion_used = "motion08_03"
+        print("Selesai load model motion 08_03")
+    elif(model == 'custom_env'):
+        # Custom env
+        experiment_id = "PPO_HumanoidBulletEnv-v0-Low_54134_00000_0_2021-05-03_21-13-19"
+        checkpoint_num = "3630"
+        motion_used = "motion09_03"
+        useCustomEnv = True
+        print("Selesai load model custom env motion 09_03")
+    else:
+        # Motion 09_03
+        experiment_id = "PPO_HumanoidBulletEnv-v0-Low_6d114_00000_0_2021-04-30_23-26-25"
+        checkpoint_num = "1690"
+        motion_used = "motion09_03"
+        print("Selesai load model motion 09_03")
+
+    
 
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
@@ -73,45 +86,52 @@ if __name__ == "__main__":
 
     # 29_21-30-25 (motion08_03)
     # 25_19-33-42 (motion09_03)
-    # motion_used = "motion08_03"
-    motion_used = "motion09_03"
-    env = LowLevelHumanoidEnv(reference_name=motion_used)
+
+    env = LowLevelHumanoidEnv(reference_name=motion_used, useCustomEnv=useCustomEnv)
     env.usePredefinedTarget = True
     
-    # Kotak
-    # env.predefinedTarget = np.array([
-    #     [5, 0, 0],
-    #     [5, -5, 0],
-    #     [0, -5, 0],
-    #     [0, 0, 0]
-    # ])
-
-    # M
-    env.predefinedTarget = np.array([
-        [5, -1, 0],
-        [0, -2, 0],
-        [5, -3, 0],
-        [0, -4, 0],
-        [0, 0, 0]
-    ])
-
-    # Segi Enam
-    # env.predefinedTarget = np.array([
-    #     [0, 5, 0],
-    #     [4.33, 2.5, 0],
-    #     [4.33, -2.5, 0],
-    #     [0, -5, 0],
-    #     [-4.33, -2.5, 0],
-    #     [-4.33, 2.5, 0],
-    # ])
-
-    # Putar 180 Derajat
-    # env.predefinedTarget = np.array([
-    #     [0, 5, 0],
-    #     [0, -5, 0],
-    #     [-5, 0, 0],
-    #     [5, 0, 0]
-    # ])
+    tipeTarget = input("Jenis target (kotak, m, segi_enam, 180, lurus, tanjakan): ").lower()
+    if (tipeTarget == 'kotak'):
+        # Kotak
+        env.predefinedTarget = np.array([
+            [5, 0, 0],
+            [5, -5, 0],
+            [0, -5, 0],
+            [0, 0, 0]
+        ])
+    elif (tipeTarget == 'm'):
+        # M
+        env.predefinedTarget = np.array([
+            [5, -1, 0],
+            [0, -2, 0],
+            [5, -3, 0],
+            [0, -4, 0],
+            [0, 0, 0]
+        ])
+    elif (tipeTarget == 'segi enam'):
+        # Segi Enam
+        env.predefinedTarget = np.array([
+            [0, 5, 0],
+            [4.33, 2.5, 0],
+            [4.33, -2.5, 0],
+            [0, -5, 0],
+            [-4.33, -2.5, 0],
+            [-4.33, 2.5, 0],
+        ])
+    elif (tipeTarget == '180'):
+        # Putar 180 Derajat
+        env.predefinedTarget = np.array([
+            [0, 5, 0],
+            [0, -5, 0],
+            [-5, 0, 0],
+            [5, 0, 0]
+        ])
+    elif (tipeTarget == 'lurus' or tipeTarget == 'tanjakan'):
+        # Lurus 10 meter, kemudian balik
+        env.predefinedTarget = np.array([
+            [10, 0, 0],
+            [0, 0, 0]
+        ])
 
     fps = 240.0
     qKey = ord("q")
@@ -120,13 +140,27 @@ if __name__ == "__main__":
 
     doneAll = False
     logStarted = False
+    
+    # Buat tanjakan untuk custom env
+    if(useCustomEnv and tipeTarget == 'tanjakan'):
+        terrainData = [0] * 256 * 256
+        for j in range(63-5, 64+5+1):
+            for i in range(63, 68):
+                terrainData[2 * i + 2 * j * 256] = (i-63)/10
+                terrainData[2 * i + 1 + 2 * j * 256] = (i-63)/10
+                terrainData[2 * i + (2 * j + 1) * 256] = (i-63)/10
+                terrainData[2 * i + 1 + (2 * j + 1) * 256] = (i-63)/10
+
     while not doneAll:
         done = False
         env.render()
         observation = env.reset(startFrame=0, startFromRef=True)
+        if(useCustomEnv and tipeTarget == 'tanjakan'):
+            env.flat_env.stadium_scene.replaceHeightfieldData(terrainData)
+            print("Selesai replace heightfield")
         drawAxis()
         if(not(logStarted)):
-            pybullet.startStateLogging(pybullet.STATE_LOGGING_VIDEO_MP4, "./out/video/{}_{}.mp4".format(experiment_id[-19:], checkpoint_num))
+            pybullet.startStateLogging(pybullet.STATE_LOGGING_VIDEO_MP4, "./out/video/{}_{}_{}_{}.mp4".format(experiment_id[-19:], checkpoint_num, model, tipeTarget))
             logStarted = True
         pause = True
 

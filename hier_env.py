@@ -150,7 +150,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.skipFrame = 1
 
         # Menandakan motion apa yang harus dijalankan sekarang dan pada frame berapa
-        self.selected_motion = 1
+        self.selected_motion = 0
         self.selected_motion_frame = 0
 
         self.starting_ep_pos = np.array([0, 0, 0])
@@ -276,7 +276,6 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.setWalkTarget(self.target[0], self.target[1])
 
         if(startFromRef):
-            self.selected_motion = 1  # 0 = 08_03, 1 = 09_03
             self.selected_motion_frame = startFrame
             self.setJointsOrientation(self.selected_motion, self.selected_motion_frame)
 
@@ -631,7 +630,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
             self.bodyPostureScore,
         ]
 
-        rewardWeight = [0.34, 0.33, 0.067, 0.033, 0.13, 0.033, 0.067]
+        rewardWeight = [0.4 , 0.2 , 0.08, 0.04, 0.16, 0.04, 0.08]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):
@@ -641,7 +640,8 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         self.checkTarget()
 
-        self.drawDebugRobotPosLine()
+        if(debug):
+            self.drawDebugRobotPosLine()
 
         rew, obs = dict(), dict()
         # Handle env termination & transitions back to higher level

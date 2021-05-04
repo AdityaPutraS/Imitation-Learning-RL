@@ -49,15 +49,17 @@ if __name__ == "__main__":
 
     agent = PPOTrainer(config_low)
     experiment_name = "HWalk_Low_Mimic"
-    experiment_id = "PPO_HumanoidBulletEnv-v0-Low_166df_00000_0_2021-04-25_19-33-42"
-    checkpoint_num = "2580"
+    experiment_id = "PPO_HumanoidBulletEnv-v0-Low_68eec_00000_0_2021-05-01_23-32-16"
+    checkpoint_num = "1610"
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name, experiment_id, checkpoint_num, checkpoint_num
         )
     )
 
-    env = LowLevelHumanoidEnv()
+    motion_used = "motion08_03"
+    # motion_used = "motion09_03"
+    env = LowLevelHumanoidEnv(reference_name=motion_used)
     env.usePredefinedTarget = True
     
     # Kotak
@@ -124,7 +126,7 @@ if __name__ == "__main__":
             i += 1
             done = False
             # env.render()
-            observation = env.resetFromFrame(startFrame=34)
+            observation = env.reset(startFrame=0, resetYaw=0, startFromRef=True)
             # drawAxis()
             pause = False
 
@@ -166,5 +168,5 @@ if __name__ == "__main__":
     env.close()
     ray.shutdown()
 
-    with open('Log/experiment_data_low2.json', 'w') as fp:
+    with open('Log/data_{}_{}.json'.format(experiment_id[-19:], checkpoint_num), 'w') as fp:
         json.dump(experiment_data, fp)
