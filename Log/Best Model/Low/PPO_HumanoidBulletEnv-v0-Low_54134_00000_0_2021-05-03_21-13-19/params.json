@@ -1,0 +1,30 @@
+{
+  "batch_mode": "complete_episodes",
+  "callbacks": "<class 'custom_callback.RewardLogCallback'>",
+  "clip_param": 0.2,
+  "env": "HumanoidBulletEnv-v0-Low",
+  "evaluation_num_episodes": 50,
+  "framework": "tf",
+  "gamma": 0.995,
+  "kl_coeff": 1.0,
+  "lambda": 0.95,
+  "log_level": "WARN",
+  "lr": 5e-05,
+  "model": {
+    "fcnet_activation": "tanh",
+    "fcnet_hiddens": [
+      256,
+      256
+    ],
+    "free_log_std": true
+  },
+  "monitor": true,
+  "num_envs_per_worker": 10,
+  "num_gpus": 1,
+  "num_sgd_iter": 20,
+  "num_workers": 6,
+  "observation_filter": "NoFilter",
+  "sgd_minibatch_size": 512,
+  "train_batch_size": 6000,
+  "vf_clip_param": 10
+}

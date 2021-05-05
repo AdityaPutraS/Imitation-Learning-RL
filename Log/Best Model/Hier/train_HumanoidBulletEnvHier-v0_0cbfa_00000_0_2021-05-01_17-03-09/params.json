@@ -1,0 +1,59 @@
+{
+  "batch_mode": "complete_episodes",
+  "callbacks": "<class 'custom_callback.RewardLogCallback'>",
+  "clip_param": 0.2,
+  "env": "HumanoidBulletEnvHier-v0",
+  "evaluation_num_episodes": 50,
+  "gamma": 0.995,
+  "kl_coeff": 1.0,
+  "lambda": 0.95,
+  "log_level": "WARN",
+  "lr": 5e-05,
+  "monitor": true,
+  "multiagent": {
+    "policies": {
+      "high_level_policy": [
+        null,
+        "Box(-inf, inf, (44,), float32)",
+        "Box(-1.0, 1.0, (2,), float32)",
+        {
+          "model": {
+            "fcnet_activation": "tanh",
+            "fcnet_hiddens": [
+              256,
+              128
+            ],
+            "free_log_std": true
+          }
+        }
+      ],
+      "low_level_policy": [
+        null,
+        "Box(-inf, inf, (58,), float32)",
+        "Box(-1.0, 1.0, (17,), float32)",
+        {
+          "model": {
+            "fcnet_activation": "tanh",
+            "fcnet_hiddens": [
+              256,
+              256
+            ],
+            "free_log_std": true
+          }
+        }
+      ]
+    },
+    "policies_to_train": [
+      "high_level_policy"
+    ],
+    "policy_mapping_fn": "<function policy_mapping_fn at 0x7f2fc0212670>"
+  },
+  "num_envs_per_worker": 20,
+  "num_gpus": 1,
+  "num_sgd_iter": 20,
+  "num_workers": 6,
+  "observation_filter": "NoFilter",
+  "sgd_minibatch_size": 512,
+  "train_batch_size": 6000,
+  "vf_clip_param": 10
+}
