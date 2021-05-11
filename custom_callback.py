@@ -35,6 +35,9 @@ class RewardLogCallback(DefaultCallbacks):
 
         episode.user_data["body_posture_score"] = []
 
+        # episode.user_data["delta_joints_low"] = []
+        # episode.user_data["delta_joints_velocity_low"] = []
+
     def on_episode_step(self, *, worker: RolloutWorker, base_env: BaseEnv,
                         episode: MultiAgentEpisode, env_index: int, **kwargs):
         dj = base_env.get_unwrapped()[0].deltaJoints
@@ -52,6 +55,9 @@ class RewardLogCallback(DefaultCallbacks):
         es = base_env.get_unwrapped()[0].electricityScore
         jls = base_env.get_unwrapped()[0].jointLimitScore
 
+        # dj_low = base_env.get_unwrapped()[0].deltaJoints_low
+        # djv_low = base_env.get_unwrapped()[0].deltaVelJoints_low
+
         episode.user_data["delta_joints"].append(dj)
         episode.user_data["delta_end_point"].append(ep)
         episode.user_data["low_target_score"].append(lts)
@@ -67,6 +73,8 @@ class RewardLogCallback(DefaultCallbacks):
         episode.user_data["electricity_score"].append(es)
         episode.user_data["joint_limit_score"].append(jls)
 
+        # episode.user_data["delta_joints_low"].append(dj_low)
+        # episode.user_data["delta_joints_velocity_low"].append(djv_low)
 
         # robotDist = np.linalg.norm(base_env.get_unwrapped()[0].starting_ep_pos)
         robotDist = np.linalg.norm(base_env.get_unwrapped()[0].robot_pos)
@@ -94,6 +102,9 @@ class RewardLogCallback(DefaultCallbacks):
 
         mean_bps = np.mean(episode.user_data["body_posture_score"])
 
+        # mean_dj_low = np.mean(episode.user_data["delta_joints_low"])
+        # mean_djv_low = np.mean(episode.user_data["delta_joints_velocity_low"])
+
         episode.custom_metrics["delta_joints"] = mean_dj
         episode.custom_metrics["delta_end_point"] = mean_ep
         episode.custom_metrics["base_reward"] = mean_br
@@ -112,3 +123,6 @@ class RewardLogCallback(DefaultCallbacks):
         episode.custom_metrics["joint_limit_score"] = mean_jls
 
         episode.custom_metrics["body_posture_score"] = mean_bps
+
+        # episode.custom_metrics["delta_joints_low"] = mean_dj_low
+        # episode.custom_metrics["delta_joints_velocity_low"] = mean_djv_low

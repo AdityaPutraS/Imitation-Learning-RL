@@ -60,10 +60,15 @@ if __name__ == "__main__":
             checkpoint_num = "960"
             env.selected_motion = 0
             print("Selesai load model motion 08_03")
-        else:
+        elif(model == "09_03"):
             # Motion 09_03
             experiment_id = "train_HumanoidBulletEnvHier-v0_0cbfa_00000_0_2021-05-01_17-03-09"
             checkpoint_num = "1320"
+            env.selected_motion = 1
+            print("Selesai load model motion 09_03")
+        elif(model == "l"):
+            experiment_id = "train_HumanoidBulletEnvHier-v0_fa2a8_00000_0_2021-05-10_20-26-42"
+            checkpoint_num = "4350"
             env.selected_motion = 1
             print("Selesai load model motion 09_03")
 
@@ -120,10 +125,10 @@ if __name__ == "__main__":
         while not doneAll:
             done = False
             env.render()
-            observation = env.resetFromFrame(startFrame=50)
+            observation = env.reset(startFrame=None)
             drawAxis()
             if(not(logStarted)):
-                pybullet.startStateLogging(pybullet.STATE_LOGGING_VIDEO_MP4, "./out/video/hier_{}_{}_{}_{}.mp4".format(experiment_id[-19:], checkpoint_num, model, tipeTarget))
+                # pybullet.startStateLogging(pybullet.STATE_LOGGING_VIDEO_MP4, "./out/video/hier_{}_{}_{}_{}.mp4".format(experiment_id[-19:], checkpoint_num, model, tipeTarget))
                 logStarted = True
             pause = True
             while not done and not doneAll:
@@ -131,6 +136,10 @@ if __name__ == "__main__":
                 if(not pause):
                     if('high_level_agent' in observation):
                         action['high_level_agent'] = agent.compute_action(observation['high_level_agent'], policy_id='high_level_policy')
+                        # for i in range(17):
+                        #     relPos, relVel = env.cur_obs[8+ i * 2], env.cur_obs[8 + i * 2 + 1]
+                        #     print("{}: {}, {}".format(i, relPos, action['high_level_agent'][i * 2]))
+                        # print('============================')
                         # if(not pause):
                             # pause = True
                     else:

@@ -132,14 +132,14 @@ class LowLevelHumanoidEnv(gym.Env):
         self.initReward()
 
         self.target = np.array([1, 0, 0])
-        self.targetLen = 5
+        self.targetLen = 10
         self.highLevelDegTarget = 0
 
         self.predefinedTarget = np.array([[]])
         self.predefinedTargetIndex = 0
         self.usePredefinedTarget=False
 
-        self.skipFrame = 1
+        self.skipFrame = 2
 
         self.starting_ep_pos = np.array([0, 0, 0])
         self.starting_robot_pos = np.array([0, 0, 0])
@@ -162,6 +162,7 @@ class LowLevelHumanoidEnv(gym.Env):
         self.electricityScore = 0
         self.jointLimitScore = 0
         self.bodyPostureScore = 0
+        self.bodySpeedScore = 0
 
         self.highTargetScore = 0
         self.driftScore = 0
@@ -225,12 +226,13 @@ class LowLevelHumanoidEnv(gym.Env):
         if self.frame == 0:
             self.starting_ep_pos = self.robot_pos.copy()
 
-    def reset(self, startFrame=None, resetYaw=0, startFromRef=True):
+    def reset(self, startFrame=None, resetYaw=0, startFromRef=True, initVel=True):
         # Insialisasi dengan posisi awal random sesuai referensi
         return self.resetFromFrame(
             startFrame=self.rng.integers(0, self.max_frame - 5) if startFrame == None else startFrame,
             resetYaw=resetYaw,
-            startFromRef=startFromRef
+            startFromRef=startFromRef,
+            initVel=initVel
         )
 
     def setWalkTarget(self, x, y):
@@ -247,7 +249,7 @@ class LowLevelHumanoidEnv(gym.Env):
 
         return np.array([randomX, randomY, z])
 
-    def resetFromFrame(self, startFrame=0, resetYaw=0, startFromRef=True):
+    def resetFromFrame(self, startFrame=0, resetYaw=0, startFromRef=True, initVel=True):
         self.flat_env.reset()
 
         self.cur_timestep = 0
@@ -293,7 +295,7 @@ class LowLevelHumanoidEnv(gym.Env):
         # starting_ep_pos = rightFootPosActual - rightFootPosRef
         self.starting_ep_pos = rightFootPosActual - rightFootPosRef
 
-        if(startFromRef):
+        if(startFromRef and initVel):
             rightLegPosRef = rotDeg.apply(getJointPos(endPointRef, "RightLeg"))
             rightLegPosRefNext = rotDeg.apply(getJointPos(endPointRefNext, "RightLeg"))
             startingVelocity = (rightLegPosRefNext - rightLegPosRef) / 0.0165

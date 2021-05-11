@@ -1,11 +1,13 @@
 from hier_env import HierarchicalHumanoidEnv
 from low_level_env import LowLevelHumanoidEnv
 import ray
+from ray import tune
 from ray.rllib.agents.ppo import PPOTrainer
 from ray.tune.registry import register_env
 from ray.tune import function
 from custom_callback import RewardLogCallback
 from ray.rllib.agents.ddpg.apex import APEX_DDPG_DEFAULT_CONFIG
+import numpy as np
 
 def make_env_low(env_config):
     import pybullet_envs
@@ -42,6 +44,62 @@ config_low = {
     "vf_clip_param": 10,
     "sgd_minibatch_size": 512,
     "train_batch_size": 6000,
+    "model": {
+        "fcnet_hiddens": [256, 256],
+        "fcnet_activation": "tanh",
+        "free_log_std": True,
+    },
+    "batch_mode": "complete_episodes",
+    "observation_filter": "NoFilter",
+    "framework": "tf",
+}
+
+config_low_search = {
+    "env": ENV_LOW,
+    "callbacks": RewardLogCallback,
+    "num_workers": 6,
+    "num_envs_per_worker": 10,
+    "log_level": "WARN",
+    "num_gpus": 1,
+    "monitor": True,
+    "evaluation_num_episodes": 50,
+    "gamma": tune.quniform(0.8, 0.9997, 0.0001),
+    "lambda": tune.quniform(0.9, 1, 0.01),
+    "clip_param": tune.quniform(0.1, 0.3, 0.1),
+    "kl_coeff": tune.quniform(0.3, 1, 0.1),
+    "lr": 5e-5,
+    "vf_clip_param": 10,
+    "num_sgd_iter": tune.choice([10, 20, 30]),
+    "sgd_minibatch_size": tune.choice([128, 512, 2048]),
+    "train_batch_size": tune.choice([10000, 20000, 40000]),
+    "model": {
+        "fcnet_hiddens": [256, 256],
+        "fcnet_activation": "tanh",
+        "free_log_std": True,
+    },
+    "batch_mode": "complete_episodes",
+    "observation_filter": "NoFilter",
+    "framework": "tf",
+}
+
+config_low_best = {
+    "env": ENV_LOW,
+    "callbacks": RewardLogCallback,
+    "num_workers": 6,
+    "num_envs_per_worker": 10,
+    "log_level": "WARN",
+    "num_gpus": 1,
+    "monitor": True,
+    "evaluation_num_episodes": 50,
+    "gamma": 0.9997,
+    "lambda": 0.901324,
+    "clip_param": 0.5,
+    "kl_coeff": 0.505869,
+    "num_sgd_iter": 30,
+    "lr": 5.927e-5,
+    "vf_clip_param": 10,
+    "sgd_minibatch_size": 4096,
+    "train_batch_size": 8431,
     "model": {
         "fcnet_hiddens": [256, 256],
         "fcnet_activation": "tanh",
@@ -172,7 +230,7 @@ highLevelPolicy = (
     single_env.high_level_act_space,
     {
         "model": {
-            "fcnet_hiddens": [256, 128],
+            "fcnet_hiddens": [256, 256],
             "fcnet_activation": "tanh",
             "free_log_std": True,
         },

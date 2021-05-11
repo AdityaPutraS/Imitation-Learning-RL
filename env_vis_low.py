@@ -72,6 +72,12 @@ if __name__ == "__main__":
             motion_used = "motion09_03"
             useCustomEnv = True
             print("Selesai load model custom env motion 09_03")
+        elif(model == 'l'):
+            experiment_id = "PPO_HumanoidBulletEnv-v0-Low_1513b_00000_0_2021-05-11_15-04-09"
+            checkpoint_num = "5520"
+            motion_used = "motion09_03"
+            useCustomEnv = False
+            print("Selesai load model latest")
         else:
             # Motion 09_03
             experiment_id = "PPO_HumanoidBulletEnv-v0-Low_6d114_00000_0_2021-04-30_23-26-25"
@@ -157,7 +163,7 @@ if __name__ == "__main__":
         while not doneAll:
             done = False
             env.render()
-            observation = env.reset(startFrame=0, startFromRef=True)
+            observation = env.reset(startFrame=0, startFromRef=True, initVel=False)
             if(useCustomEnv and tipeTarget == 'tanjakan'):
                 env.flat_env.stadium_scene.replaceHeightfieldData(terrainData)
                 print("Selesai replace heightfield")

@@ -31,14 +31,14 @@ checkpoint_num = "1610"
 
 
 experiment_name_hier = "HWalk_Hier_Mimic"
-experiment_id_hier = "train_HumanoidBulletEnvHier-v0_6690d_00000_0_2021-05-02_12-25-18"
-checkpoint_num_hier = "1"
+experiment_id_hier = "train_HumanoidBulletEnvHier-v0_ee131_00000_0_2021-05-09_19-58-55"
+checkpoint_num_hier = "4100"
 
 # Cara train:
 # Load model low level terlebih dahulu dengan set resumeFromCheckpoint=False,  useModelFromLowLevelTrain=True
 # Tunggu hingga ke save 1 iterasi
 # Train ulang dengan resumeFromCheckpoint=True,  useModelFromLowLevelTrain=False
-resumeFromCheckpoint = True
+resumeFromCheckpoint = False
 useModelFromLowLevelTrain = False
 
 
@@ -87,7 +87,7 @@ def train(config, checkpoint_dir=None):
 
 if __name__ == "__main__":
     ray.init(ignore_reinit_error=True)
-    config_hier["multiagent"]["policies_to_train"] = ["high_level_policy"]
+    # config_hier["multiagent"]["policies_to_train"] = ["high_level_policy"]
     resources = PPOTrainer.default_resource_request(config_hier).to_json()
     tune.run(
         train,
