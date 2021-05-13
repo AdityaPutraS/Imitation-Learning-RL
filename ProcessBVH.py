@@ -177,7 +177,6 @@ def setJoint(frame, env, df):
 # Jika di visualisasikan sama saja seperti melakukan gerakan tapi posisi robot tetap diam di tempat
 # Jika USE_NORMALIZED_DF bernilai false, dataset berisi posisi absolut setiap sendi dalam koordinat global
 # Jika di visualisasikan maka akan terlihat berjalan / melompat, percis seperti di program blender
-# Set jadi false jika ingin membentuk dataset untuk hierarchical, true jika untuk low level saja
 USE_NORMALIZED_DF = False
 
 if __name__ == "__main__":

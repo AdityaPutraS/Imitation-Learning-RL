@@ -11,7 +11,7 @@ import numpy as np
 
 def make_env_low(env_config):
     import pybullet_envs
-    return LowLevelHumanoidEnv(reference_name="motion09_03", useCustomEnv=False)
+    return LowLevelHumanoidEnv(reference_name="motion08_03", useCustomEnv=False)
 
 
 def make_env_hier(env_config):

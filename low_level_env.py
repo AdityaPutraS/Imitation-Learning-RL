@@ -132,7 +132,7 @@ class LowLevelHumanoidEnv(gym.Env):
         self.initReward()
 
         self.target = np.array([1, 0, 0])
-        self.targetLen = 10
+        self.targetLen = 5
         self.highLevelDegTarget = 0
 
         self.predefinedTarget = np.array([[]])
