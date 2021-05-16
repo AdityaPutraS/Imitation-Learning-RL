@@ -6,7 +6,7 @@ def rotFrom2Vec(v1, v2):
     rotAxis = rotAxis / np.linalg.norm(rotAxis)
     rotAngle = v1.dot(v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
     rotAngle = np.arccos(rotAngle)
-    if(rotAxis.all() == 0):
+    if(np.all(rotAxis == 0)):
         rotAxis = np.array([1, 0, 0])
         if((v1 == v2).all()):
             rotAngle = 0

@@ -36,22 +36,22 @@ def drawLine(c1, c2, color, lifeTime=0.1):
 class LowLevelHumanoidEnv(gym.Env):
     metadata = {"render.modes": ["human", "rgb_array"], "video.frames_per_second": 60}
 
-    def __init__(self, reference_name="motion08_03", useCustomEnv=False):
+    def __init__(self, reference_name="motion08_03", useCustomEnv=False, customRobot=None):
         self.useCustomEnv = useCustomEnv
         if(useCustomEnv):
             self.flat_env = CustomHumanoid()
         else:
-            self.flat_env = HumanoidBulletEnv()
+            self.flat_env = HumanoidBulletEnv(robot=customRobot)
 
         # self.observation_space = Box(
         #     low=-np.inf, high=np.inf, shape=[1 + 5 + 17 * 2 + 2 + 8]
         # )
         self.observation_space = Box(
-            low=-np.inf, high=np.inf, shape=[42 + 8 * 2]
+            low=-np.inf, high=np.inf, shape=[42 + 14 * 2]
         )  # Foot contact tidak dimasukan
         self.action_space = self.flat_env.action_space
 
-        basePath = "~/GitHub/TA/Relative_Joints_CSV"
+        basePath = "~/GitHub/TA/Joints CSV With Hand"
         self.joints_df = pd.read_csv(
             "{}/{}JointPosRad.csv".format(basePath, reference_name)
         )
@@ -88,6 +88,12 @@ class LowLevelHumanoidEnv(gym.Env):
             "left_hip_x": "leftHipX",
             "left_hip_y": "leftHipY",
             "left_hip_z": "leftHipZ",
+            "right_shoulder_x": "rightShoulderX",
+            "right_shoulder_y": "rightShoulderY",
+            "right_elbow": "rightElbow",
+            "left_shoulder_x": "leftShoulderX",
+            "left_shoulder_y": "leftShoulderY",
+            "left_elbow": "leftElbow",
         }
 
         self.joint_weight = {
@@ -99,6 +105,12 @@ class LowLevelHumanoidEnv(gym.Env):
             "left_hip_x": 1,
             "left_hip_y": 3,
             "left_hip_z": 1,
+            "right_shoulder_x": 1,
+            "right_shoulder_y": 3,
+            "right_elbow": 3,
+            "left_shoulder_x": 1,
+            "left_shoulder_y": 3,
+            "left_elbow": 3,
         }
         self.joint_weight_sum = sum(self.joint_weight.values())
 
@@ -111,6 +123,12 @@ class LowLevelHumanoidEnv(gym.Env):
             "left_hip_x": 1,
             "left_hip_y": 1,
             "left_hip_z": 1,
+            "right_shoulder_x": 1,
+            "right_shoulder_y": 1,
+            "right_elbow": 1,
+            "left_shoulder_x": 1,
+            "left_shoulder_y": 1,
+            "left_elbow": 1,
         }
         self.joint_vel_weight_sum = sum(self.joint_vel_weight.values())
 
@@ -190,33 +208,10 @@ class LowLevelHumanoidEnv(gym.Env):
         self.flat_env.jdict["abdomen_y"].set_state(0, 0)
         self.flat_env.jdict["abdomen_z"].set_state(0, 0)
 
-        self.flat_env.jdict["right_knee"].set_state(
-            jointsRef["rightKnee"], jointsVelRef["rightKnee"]
-        )
-
-        self.flat_env.jdict["right_hip_x"].set_state(
-            jointsRef["rightHipX"], jointsVelRef["rightHipX"]
-        )
-        self.flat_env.jdict["right_hip_y"].set_state(
-            jointsRef["rightHipY"], jointsVelRef["rightHipY"]
-        )
-        self.flat_env.jdict["right_hip_z"].set_state(
-            jointsRef["rightHipZ"], jointsVelRef["rightHipZ"]
-        )
-
-        self.flat_env.jdict["left_knee"].set_state(
-            jointsRef["leftKnee"], jointsVelRef["leftKnee"]
-        )
-
-        self.flat_env.jdict["left_hip_x"].set_state(
-            jointsRef["leftHipX"], jointsVelRef["leftHipX"]
-        )
-        self.flat_env.jdict["left_hip_y"].set_state(
-            jointsRef["leftHipY"], jointsVelRef["leftHipY"]
-        )
-        self.flat_env.jdict["left_hip_z"].set_state(
-            jointsRef["leftHipZ"], jointsVelRef["leftHipZ"]
-        )
+        for joint in self.joint_map:
+            self.flat_env.jdict[joint].set_state(
+                jointsRef[self.joint_map[joint]], jointsVelRef[self.joint_map[joint]]
+            )
 
     def incFrame(self, inc):
         # self.frame_update_cnt = (self.frame_update_cnt + 1) % 2

@@ -33,9 +33,9 @@ class CustomHumanoidRobot(WalkerBase):
         self.motor_power += [100, 100, 300, 200]
         self.motor_names += ["left_hip_x", "left_hip_z", "left_hip_y", "left_knee"]
         self.motor_power += [100, 100, 300, 200]
-        self.motor_names += ["right_shoulder1", "right_shoulder2", "right_elbow"]
+        self.motor_names += ["right_shoulder_x", "right_shoulder_y", "right_elbow"]
         self.motor_power += [75, 75, 75]
-        self.motor_names += ["left_shoulder1", "left_shoulder2", "left_elbow"]
+        self.motor_names += ["left_shoulder_x", "left_shoulder_y", "left_elbow"]
         self.motor_power += [75, 75, 75]
         self.motors = [self.jdict[n] for n in self.motor_names]
         if self.random_yaw:

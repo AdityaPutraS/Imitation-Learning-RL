@@ -5,7 +5,8 @@ from pymo.parsers import BVHParser
 from pymo.preprocessing import *
 
 from math_util import rotFrom2Vec
-from low_level_env import LowLevelHumanoidEnv
+from pybullet_envs.gym_locomotion_envs import HumanoidBulletEnv
+from humanoid import CustomHumanoidRobot
 import gym
 import pybullet_envs
 import pybullet
@@ -31,7 +32,13 @@ MOTION = [
         "motion_number": "03",
         "start_frame": 1,
         "end_frame": 91,
-    }
+    },
+    {
+        "subject": "13",
+        "motion_number": "13",
+        "start_frame": 100,
+        "end_frame": 320,
+    },
 ]
 TIME_STEP_BVH = 0.0083333
 TIME_STEP_PYBULLET = (
@@ -49,7 +56,7 @@ ENDPOINT_LIST = [
     "RightHand",
 ]
 JOINT_MULTIPLIER = 1.0 / 15
-OUT_FOLDER = "Processed Relative Joints CSV"
+OUT_FOLDER = "Joints CSV With Hand"
 
 
 def _getJointPos(df, joint, frame, multiplier=JOINT_MULTIPLIER):
@@ -152,6 +159,67 @@ def setJoint(frame, env, df):
     leftHipX_relative, leftHipY_relative, leftHipZ_relative = leftHip[1]
     leftKnee_absolute = leftKnee[0][0]
     leftKnee_relative = leftKnee[1][0]
+
+    rightHand = moveJoint(
+        "link0_21",
+        "link0_24",
+        "RightArm",
+        "RightForeArm",
+        frame,
+        ["right_shoulder_x", "right_shoulder_y"],
+        [1, 1],
+        [0, 1],
+        env,
+        df
+    )
+    rightElbow = moveJoint(
+        "link0_24",
+        "right_hand",
+        "RightForeArm",
+        "RightHand",
+        frame,
+        ["right_elbow"],
+        [1],
+        [1],
+        env,
+        df
+    )
+
+    rightShoulderX, rightShoulderY = rightHand[0]
+    rightShoulderX_relative, rightShoulderY_relative = rightHand[1]
+    rightElbow_absolute = rightElbow[0][0]
+    rightElbow_relative = rightElbow[1][0]
+
+    leftHand = moveJoint(
+        "link0_27",
+        "link0_30",
+        "LeftArm",
+        "LeftForeArm",
+        frame,
+        ["left_shoulder_x", "left_shoulder_y"],
+        [-1, 1],
+        [0, 1],
+        env,
+        df
+    )
+    leftElbow = moveJoint(
+        "link0_30",
+        "left_hand",
+        "LeftForeArm",
+        "LeftHand",
+        frame,
+        ["left_elbow"],
+        [1],
+        [1],
+        env,
+        df
+    )
+
+    leftShoulderX, leftShoulderY = leftHand[0]
+    leftShoulderX_relative, leftShoulderY_relative = leftHand[1]
+    leftElbow_absolute = leftElbow[0][0]
+    leftElbow_relative = leftElbow[1][0]
+
     return [
         rightHipX,
         rightHipY,
@@ -161,6 +229,12 @@ def setJoint(frame, env, df):
         leftHipY,
         leftHipZ,
         leftKnee_absolute,
+        rightShoulderX,
+        rightShoulderY,
+        rightElbow_absolute,
+        leftShoulderX,
+        leftShoulderY,
+        leftElbow_absolute,
     ], [
         rightHipX_relative,
         rightHipY_relative,
@@ -170,6 +244,12 @@ def setJoint(frame, env, df):
         leftHipY_relative,
         leftHipZ_relative,
         leftKnee_relative,
+        rightShoulderX_relative,
+        rightShoulderY_relative,
+        rightElbow_relative,
+        leftShoulderX_relative,
+        leftShoulderY_relative,
+        leftElbow_relative,
     ]
 
 
@@ -180,7 +260,7 @@ def setJoint(frame, env, df):
 USE_NORMALIZED_DF = False
 
 if __name__ == "__main__":
-    env = gym.make("HumanoidBulletEnv-v0")
+    env = HumanoidBulletEnv(robot=CustomHumanoidRobot())
     for m in MOTION:
         sub = m["subject"]
         mot = m["motion_number"]
@@ -248,6 +328,12 @@ if __name__ == "__main__":
                 "leftHipY",
                 "leftHipZ",
                 "leftKnee",
+                "rightShoulderX",
+                "rightShoulderY",
+                "rightElbow",
+                "leftShoulderX",
+                "leftShoulderY",
+                "leftElbow",
             ],
         )
         joint_df.to_csv(
@@ -265,6 +351,12 @@ if __name__ == "__main__":
                 "leftHipY",
                 "leftHipZ",
                 "leftKnee",
+                "rightShoulderX",
+                "rightShoulderY",
+                "rightElbow",
+                "leftShoulderX",
+                "leftShoulderY",
+                "leftElbow",
             ],
         )
         joint_df_rel.to_csv(

@@ -26,19 +26,19 @@ from ray.tune import CLIReporter
 import os
 
 experiment_name = "HWalk_Low_Mimic"
-experiment_id = "PPO_HumanoidBulletEnv-v0-Low_68eec_00000_0_2021-05-01_23-32-16"
-checkpoint_num = "1610"
+experiment_id = "PPO_HumanoidBulletEnv-v0-Low_1513b_00000_0_2021-05-11_15-04-09"
+checkpoint_num = "5520"
 
 
 experiment_name_hier = "HWalk_Hier_Mimic"
-experiment_id_hier = "train_HumanoidBulletEnvHier-v0_ee131_00000_0_2021-05-09_19-58-55"
-checkpoint_num_hier = "4100"
+experiment_id_hier = "train_HumanoidBulletEnvHier-v0_1e619_00000_0_2021-05-15_11-53-33"
+checkpoint_num_hier = "430"
 
 # Cara train:
 # Load model low level terlebih dahulu dengan set resumeFromCheckpoint=False,  useModelFromLowLevelTrain=True
 # Tunggu hingga ke save 1 iterasi
 # Train ulang dengan resumeFromCheckpoint=True,  useModelFromLowLevelTrain=False
-resumeFromCheckpoint = False
+resumeFromCheckpoint = True
 useModelFromLowLevelTrain = False
 
 
@@ -87,7 +87,7 @@ def train(config, checkpoint_dir=None):
 
 if __name__ == "__main__":
     ray.init(ignore_reinit_error=True)
-    # config_hier["multiagent"]["policies_to_train"] = ["high_level_policy"]
+    config_hier["multiagent"]["policies_to_train"] = ["high_level_policy"]
     resources = PPOTrainer.default_resource_request(config_hier).to_json()
     tune.run(
         train,

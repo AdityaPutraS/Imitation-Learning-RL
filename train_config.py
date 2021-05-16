@@ -11,7 +11,7 @@ import numpy as np
 
 def make_env_low(env_config):
     import pybullet_envs
-    return LowLevelHumanoidEnv(reference_name="motion08_03", useCustomEnv=False)
+    return LowLevelHumanoidEnv(reference_name="motion09_03", useCustomEnv=False)
 
 
 def make_env_hier(env_config):
@@ -275,6 +275,35 @@ config_hier = {
     "vf_clip_param": 10,
     "sgd_minibatch_size": 512,
     "train_batch_size": 6000,
+    "batch_mode": "complete_episodes",
+    "observation_filter": "NoFilter",
+}
+
+config_hier_best = {
+    "env": ENV_HIER,
+    "callbacks": RewardLogCallback,
+    "num_workers": 6,
+    "num_envs_per_worker": 10,
+    "multiagent": {
+        "policies": {
+            "high_level_policy": highLevelPolicy,
+            "low_level_policy": lowLevelPolicy,
+        },
+        "policy_mapping_fn": function(policy_mapping_fn),
+    },
+    "log_level": "WARN",
+    "num_gpus": 1,
+    "monitor": True,
+    "evaluation_num_episodes": 50,
+    "gamma": 0.9997,
+    "lambda": 0.901324,
+    "clip_param": 0.5,
+    "kl_coeff": 0.505869,
+    "num_sgd_iter": 30,
+    "lr": 5.927e-5,
+    "vf_clip_param": 10,
+    "sgd_minibatch_size": 4096,
+    "train_batch_size": 8431,
     "batch_mode": "complete_episodes",
     "observation_filter": "NoFilter",
 }

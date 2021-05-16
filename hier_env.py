@@ -147,10 +147,10 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.predefinedTargetIndex = 0
         self.usePredefinedTarget = False
 
-        self.skipFrame = 1
+        self.skipFrame = 2
 
         # Menandakan motion apa yang harus dijalankan sekarang dan pada frame berapa
-        self.selected_motion = 0
+        self.selected_motion = 1
         self.selected_motion_frame = 0
 
         self.starting_ep_pos = np.array([0, 0, 0])
@@ -239,12 +239,13 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         if self.selected_motion_frame == 0:
             self.starting_ep_pos = self.robot_pos.copy()
 
-    def reset(self, startFrame=None, startFromRef=True):
+    def reset(self, startFrame=None, startFromRef=True, initVel=True):
         # Insialisasi dengan posisi awal random sesuai referensi
         return self.resetFromFrame(
             startFrame=self.rng.integers(0, self.max_frame[self.selected_motion] - 5) if startFrame == None else startFrame,
             resetYaw=self.rng.integers(-180, 180),
-            startFromRef=True
+            startFromRef=True,
+            initVel=initVel
         )
 
     def setWalkTarget(self, x, y):
@@ -261,7 +262,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         return np.array([randomX, randomY, z])
 
-    def resetFromFrame(self, startFrame=0, resetYaw=0, startFromRef=True):
+    def resetFromFrame(self, startFrame=0, resetYaw=0, startFromRef=True, initVel=True):
         self.flat_env.reset()
 
         self.cur_timestep = 0
@@ -313,7 +314,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         # starting_ep_pos = rightFootPosActual - rightFootPosRef
         self.starting_ep_pos = rightFootPosActual - rightFootPosRef
 
-        if(startFromRef):
+        if(startFromRef and initVel):
             rightLegPosRef = rotDeg.apply(getJointPos(endPointRef, "RightLeg"))
             rightLegPosRefNext = rotDeg.apply(getJointPos(endPointRefNext, "RightLeg"))
             startingVelocity = (rightLegPosRefNext - rightLegPosRef) / 0.0165
@@ -630,7 +631,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
             self.bodyPostureScore,
         ]
 
-        rewardWeight = [0.4 , 0.2 , 0.08, 0.04, 0.16, 0.04, 0.08]
+        rewardWeight = [0.34, 0.1, 0.34, 0.034, 0.1, 0.034, 0.067]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):
@@ -653,7 +654,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         if f_done or (self.cur_timestep >= self.max_timestep):
             self.updateRewardHigh()
             done["__all__"] = True
-            rew["high_level_agent"] = self.delta_highTargetScore * 0.1 + self.driftScore * 0.9
+            rew["high_level_agent"] = self.delta_highTargetScore * 0.3 + self.driftScore * 0.7
             obs["high_level_agent"] = self.getHighLevelObs()
             obs[self.low_level_agent_id] = self.getLowLevelObs()
             rew[self.low_level_agent_id] = totalReward
@@ -661,7 +662,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         elif self.steps_remaining_at_level <= 0:
             self.updateRewardHigh()
             # done[self.low_level_agent_id] = True
-            rew["high_level_agent"] = self.delta_highTargetScore * 0.1 + self.driftScore * 0.9
+            rew["high_level_agent"] = self.delta_highTargetScore * 0.3 + self.driftScore * 0.7
             obs["high_level_agent"] = self.getHighLevelObs()
             self.cumulative_aliveReward = 0
         else:

@@ -67,8 +67,8 @@ if __name__ == "__main__":
             env.selected_motion = 1
             print("Selesai load model motion 09_03")
         elif(model == "l"):
-            experiment_id = "train_HumanoidBulletEnvHier-v0_fa2a8_00000_0_2021-05-10_20-26-42"
-            checkpoint_num = "4350"
+            experiment_id = "train_HumanoidBulletEnvHier-v0_19570_00000_0_2021-05-16_19-01-43"
+            checkpoint_num = "330"
             env.selected_motion = 1
             print("Selesai load model motion 09_03")
 
