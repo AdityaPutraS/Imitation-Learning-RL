@@ -46,8 +46,12 @@ class LowLevelHumanoidEnv(gym.Env):
         # self.observation_space = Box(
         #     low=-np.inf, high=np.inf, shape=[1 + 5 + 17 * 2 + 2 + 8]
         # )
+        # Observation = 
+        #       8 Data robot
+        #       Sudut & vel tiap sendi (21)
+        #       Sudut & vel tiap sendi referensi (14 [semua kecuali abdomen(3 sendi) + ankle(2 sendi per kaki, total 4)])
         self.observation_space = Box(
-            low=-np.inf, high=np.inf, shape=[42 + 14 * 2]
+            low=-np.inf, high=np.inf, shape=[8 + 21 * 2 + 14 * 2]
         )  # Foot contact tidak dimasukan
         self.action_space = self.flat_env.action_space
 
@@ -105,30 +109,30 @@ class LowLevelHumanoidEnv(gym.Env):
             "left_hip_x": 1,
             "left_hip_y": 3,
             "left_hip_z": 1,
-            "right_shoulder_x": 1,
-            "right_shoulder_y": 3,
-            "right_elbow": 3,
-            "left_shoulder_x": 1,
-            "left_shoulder_y": 3,
-            "left_elbow": 3,
+            "right_shoulder_x": 0.1,
+            "right_shoulder_y": 0.3,
+            "right_elbow": 0.3,
+            "left_shoulder_x": 0.1,
+            "left_shoulder_y": 0.3,
+            "left_elbow": 0.3,
         }
         self.joint_weight_sum = sum(self.joint_weight.values())
 
         self.joint_vel_weight = {
-            "right_knee": 1,
+            "right_knee": 3,
             "right_hip_x": 1,
-            "right_hip_y": 1,
+            "right_hip_y": 3,
             "right_hip_z": 1,
-            "left_knee": 1,
+            "left_knee": 3,
             "left_hip_x": 1,
-            "left_hip_y": 1,
+            "left_hip_y": 3,
             "left_hip_z": 1,
-            "right_shoulder_x": 1,
-            "right_shoulder_y": 1,
-            "right_elbow": 1,
-            "left_shoulder_x": 1,
-            "left_shoulder_y": 1,
-            "left_elbow": 1,
+            "right_shoulder_x": 0.1,
+            "right_shoulder_y": 0.3,
+            "right_elbow": 0.3,
+            "left_shoulder_x": 0.1,
+            "left_shoulder_y": 0.3,
+            "left_elbow": 0.3,
         }
         self.joint_vel_weight_sum = sum(self.joint_vel_weight.values())
 
@@ -214,20 +218,19 @@ class LowLevelHumanoidEnv(gym.Env):
             )
 
     def incFrame(self, inc):
-        # self.frame_update_cnt = (self.frame_update_cnt + 1) % 2
-        # if(self.frame_update_cnt == 0):
         self.frame = (self.frame + inc) % (self.max_frame - 1)
 
         if self.frame == 0:
             self.starting_ep_pos = self.robot_pos.copy()
 
-    def reset(self, startFrame=None, resetYaw=0, startFromRef=True, initVel=True):
+    def reset(self, resetYaw=0):
         # Insialisasi dengan posisi awal random sesuai referensi
+        useReference = self.rng.integers(0, 100) <= 80
         return self.resetFromFrame(
-            startFrame=self.rng.integers(0, self.max_frame - 5) if startFrame == None else startFrame,
+            startFrame=self.rng.integers(0, self.max_frame - 5) if useReference else 0,
             resetYaw=resetYaw,
-            startFromRef=startFromRef,
-            initVel=initVel
+            startFromRef=useReference,
+            initVel=useReference
         )
 
     def setWalkTarget(self, x, y):
@@ -237,7 +240,6 @@ class LowLevelHumanoidEnv(gym.Env):
         self.flat_env.robot.walk_target_y = y
 
     def getRandomVec(self, vecLen, z, initYaw=0):
-        # randomRad = initYaw + np.deg2rad(self.rng.integers(-180, 180))
         randomRad = initYaw + np.deg2rad(self.rng.integers(-180, 180))
         randomX = np.cos(randomRad) * vecLen
         randomY = np.sin(randomRad) * vecLen
@@ -261,7 +263,6 @@ class LowLevelHumanoidEnv(gym.Env):
             self.setJointsOrientation(self.frame)
 
         # Posisi awal robot
-        # robotPos = self.getRandomVec(3, 1.15)
         robotPos = np.array([0, 0, 1.17])
         self.robot_pos = np.array([robotPos[0], robotPos[1], 0])
         self.last_robotPos = self.robot_pos.copy()
@@ -287,7 +288,6 @@ class LowLevelHumanoidEnv(gym.Env):
         )
         rightFootPosRef[2] = 0
         # Pilih hips pos agar starting_ep_pos + rightFootPosRef == rightFootPosActual
-        # starting_ep_pos = rightFootPosActual - rightFootPosRef
         self.starting_ep_pos = rightFootPosActual - rightFootPosRef
 
         if(startFromRef and initVel):
@@ -519,7 +519,9 @@ class LowLevelHumanoidEnv(gym.Env):
         # rewardWeight = [1, 0.2, 0.1, 0.4, 0.1, 0.2] # Weight (23-26-25)
         # rewardWeight = [0.34, 0.33, 0.067, 0.033, 0.13, 0.033, 0.067] # Weight (07-26-01)
         # rewardWeight = [0.4 , 0.2 , 0.08, 0.04, 0.16, 0.04, 0.08] # Weight (23-32-16)
-        rewardWeight = [0.34, 0.1, 0.34, 0.034, 0.1, 0.034, 0.067] # Weight (15-06-17)
+        # rewardWeight = [0.34, 0.1, 0.34, 0.034, 0.1, 0.034, 0.067] # Weight (15-06-17)
+
+        rewardWeight = [0.34, 0.1, 0.34, 0.034, 0.1, 0.034, 0.1] # Weight untuk PB2, Maks reward yang realistis: 104 (episode_len_mean = 2000)
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):

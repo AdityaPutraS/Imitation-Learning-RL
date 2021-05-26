@@ -14,6 +14,7 @@ from scipy.spatial.transform import Rotation as R
 import json
 import copy
 
+from humanoid import CustomHumanoidRobot
 
 def drawLine(c1, c2, color):
     return pybullet.addUserDebugLine(
@@ -73,8 +74,9 @@ if __name__ == "__main__":
             useCustomEnv = True
             print("Selesai load model custom env motion 09_03")
         elif(model == 'l'):
-            experiment_id = "PPO_HumanoidBulletEnv-v0-Low_1513b_00000_0_2021-05-11_15-04-09"
-            checkpoint_num = "5520"
+            experiment_name = "HWalk_Low_Mimic_Search_5"
+            experiment_id = "PPO_HumanoidBulletEnv-v0-Low_80fea_00001_1_2021-05-26_12-12-47"
+            checkpoint_num = "440"
             motion_used = "motion09_03"
             useCustomEnv = False
             print("Selesai load model latest")
@@ -96,7 +98,7 @@ if __name__ == "__main__":
         # 29_21-30-25 (motion08_03)
         # 25_19-33-42 (motion09_03)
 
-        env = LowLevelHumanoidEnv(reference_name=motion_used, useCustomEnv=useCustomEnv)
+        env = LowLevelHumanoidEnv(reference_name=motion_used, useCustomEnv=useCustomEnv, customRobot=CustomHumanoidRobot())
         env.usePredefinedTarget = True
         
         tipeTarget = input("Jenis target (kotak, m, segi_enam, 180, lurus, tanjakan): ").lower()
@@ -163,7 +165,7 @@ if __name__ == "__main__":
         while not doneAll:
             done = False
             env.render()
-            observation = env.reset(startFrame=0, startFromRef=True, initVel=False)
+            observation = env.resetFromFrame(startFrame=0, startFromRef=False, initVel=False)
             if(useCustomEnv and tipeTarget == 'tanjakan'):
                 env.flat_env.stadium_scene.replaceHeightfieldData(terrainData)
                 print("Selesai replace heightfield")

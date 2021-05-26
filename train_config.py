@@ -8,10 +8,11 @@ from ray.tune import function
 from custom_callback import RewardLogCallback
 from ray.rllib.agents.ddpg.apex import APEX_DDPG_DEFAULT_CONFIG
 import numpy as np
+from humanoid import CustomHumanoidRobot
 
 def make_env_low(env_config):
     import pybullet_envs
-    return LowLevelHumanoidEnv(reference_name="motion09_03", useCustomEnv=False)
+    return LowLevelHumanoidEnv(reference_name="motion09_03", useCustomEnv=False, customRobot=CustomHumanoidRobot())
 
 
 def make_env_hier(env_config):
@@ -70,8 +71,10 @@ config_low_search = {
     "lr": 5e-5,
     "vf_clip_param": 10,
     "num_sgd_iter": tune.choice([10, 20, 30]),
-    "sgd_minibatch_size": tune.choice([128, 512, 2048]),
-    "train_batch_size": tune.choice([10000, 20000, 40000]),
+    "sgd_minibatch_size": 4096,
+    "train_batch_size": tune.randint(8192, 40000),
+    "vf_loss_coeff": tune.quniform(0.5, 1, 0.01),
+    "entropy_coeff": tune.quniform(0, 0.01, 0.0001),
     "model": {
         "fcnet_hiddens": [256, 256],
         "fcnet_activation": "tanh",
@@ -86,20 +89,52 @@ config_low_best = {
     "env": ENV_LOW,
     "callbacks": RewardLogCallback,
     "num_workers": 6,
-    "num_envs_per_worker": 10,
+    "num_envs_per_worker": 5,
+    "log_level": "WARN",
+    "num_gpus": 1,
+    "monitor": False,
+    "evaluation_num_episodes": 50,
+    "gamma": 0.99,
+    "lambda": 0.9,
+    "clip_param": 0.5,
+    "kl_coeff": 0.2,
+    "num_sgd_iter": 30,
+    "lr": 5e-5,
+    "vf_clip_param": 10,
+    "sgd_minibatch_size": 4096,
+    "train_batch_size": 8192,
+    "vf_loss_coeff": 1,
+    "entropy_coeff": 0,
+    "model": {
+        "fcnet_hiddens": [256, 256],
+        "fcnet_activation": "tanh",
+        "free_log_std": True,
+    },
+    "batch_mode": "complete_episodes",
+    "observation_filter": "NoFilter",
+    "framework": "tf",
+}
+
+config_low_best_2 = {
+    "env": ENV_LOW,
+    "callbacks": RewardLogCallback,
+    "num_workers": 6,
+    "num_envs_per_worker": 20,
     "log_level": "WARN",
     "num_gpus": 1,
     "monitor": True,
     "evaluation_num_episodes": 50,
     "gamma": 0.9997,
-    "lambda": 0.901324,
-    "clip_param": 0.5,
-    "kl_coeff": 0.505869,
-    "num_sgd_iter": 30,
-    "lr": 5.927e-5,
+    "lambda": 0.9,
+    "clip_param": 0.01,
+    "kl_coeff": 1.0,
+    "num_sgd_iter": 1,
+    "lr": 0.001,
     "vf_clip_param": 10,
     "sgd_minibatch_size": 4096,
-    "train_batch_size": 8431,
+    "train_batch_size": 8192,
+    "vf_loss_coeff": 0.5,
+    "entropy_coeff": 0.01,
     "model": {
         "fcnet_hiddens": [256, 256],
         "fcnet_activation": "tanh",

@@ -100,7 +100,19 @@ def moveJoint(l1, l2, j1, j2, frame, part_name, weight, index, env, df):
         pos_relative.append(joint_relative_pos)
     return pos_absolute, pos_relative
 
+# Link 7,8, 9 = right hip x, y, z
+# Link 11 = right knee
+# Link 13, 14 = right ankle x, y
 
+# Link 16, 17, 18 = left hip x, y, z
+# Link 20 = left knee
+# Link 22, 23 = left ankle x, y
+
+# Link 25, 26 = right shoulder y, x
+# Link 28 = right elbow
+
+# Link 31, 32 = left shoulder y, x
+# Link 34 = left elbow
 def setJoint(frame, env, df):
     rightHip = moveJoint(
         "link0_7",
@@ -132,8 +144,8 @@ def setJoint(frame, env, df):
     rightKnee_relative = rightKnee[1][0]
 
     leftHip = moveJoint(
-        "link0_14",
-        "link0_18",
+        "link0_16",
+        "link0_20",
         "LeftUpLeg",
         "LeftLeg",
         frame,
@@ -144,7 +156,7 @@ def setJoint(frame, env, df):
         df,
     )
     leftKnee = moveJoint(
-        "link0_18",
+        "link0_20",
         "left_foot",
         "LeftLeg",
         "LeftFoot",
@@ -161,8 +173,8 @@ def setJoint(frame, env, df):
     leftKnee_relative = leftKnee[1][0]
 
     rightHand = moveJoint(
-        "link0_21",
-        "link0_24",
+        "link0_25",
+        "link0_28",
         "RightArm",
         "RightForeArm",
         frame,
@@ -173,7 +185,7 @@ def setJoint(frame, env, df):
         df
     )
     rightElbow = moveJoint(
-        "link0_24",
+        "link0_28",
         "right_hand",
         "RightForeArm",
         "RightHand",
@@ -191,8 +203,8 @@ def setJoint(frame, env, df):
     rightElbow_relative = rightElbow[1][0]
 
     leftHand = moveJoint(
-        "link0_27",
-        "link0_30",
+        "link0_31",
+        "link0_34",
         "LeftArm",
         "LeftForeArm",
         frame,
@@ -203,7 +215,7 @@ def setJoint(frame, env, df):
         df
     )
     leftElbow = moveJoint(
-        "link0_30",
+        "link0_34",
         "left_hand",
         "LeftForeArm",
         "LeftHand",

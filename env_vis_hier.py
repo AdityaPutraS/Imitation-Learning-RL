@@ -125,7 +125,7 @@ if __name__ == "__main__":
         while not doneAll:
             done = False
             env.render()
-            observation = env.reset(startFrame=None)
+            observation = env.resetFromFrame(startFrame=None)
             drawAxis()
             if(not(logStarted)):
                 # pybullet.startStateLogging(pybullet.STATE_LOGGING_VIDEO_MP4, "./out/video/hier_{}_{}_{}_{}.mp4".format(experiment_id[-19:], checkpoint_num, model, tipeTarget))

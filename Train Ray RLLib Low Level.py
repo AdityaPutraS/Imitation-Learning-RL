@@ -24,6 +24,7 @@ from train_config import (
     config_low,
     config_low_search,
     config_low_best,
+    config_low_best_2,
     config_low_pg,
     config_low_ddpg,
     config_low_impala,
@@ -31,81 +32,53 @@ from train_config import (
     config_low_a2c,
 )
 
-from ray.tune.schedulers import PopulationBasedTraining
 from ray.tune.schedulers.pb2 import PB2
-import random
 
 # ray.shutdown()
 ray.init(ignore_reinit_error=True)
 
 TARGET_REWARD = 10000
 
-experiment_name = "HWalk_Low_Mimic"
-experiment_id = "PPO_HumanoidBulletEnv-v0-Low_807f6_00000_0_2021-04-25_08-45-16"
-checkpoint_num = "2400"
+experiment_name = "HWalk_Low_Mimic_Search_3"
+experiment_id = "PPO_HumanoidBulletEnv-v0-Low_4964e_00001_1_2021-05-25_10-04-17"
+checkpoint_num = "349"
 
 resume = False
 
-def explore(config):
-    # ensure we collect enough timesteps to do sgd
-    if config["train_batch_size"] <= config["sgd_minibatch_size"] * 2:
-        config["train_batch_size"] = config["sgd_minibatch_size"] * 2
-    # ensure we run at least one sgd iter
-    if config["num_sgd_iter"] < 1:
-        config["num_sgd_iter"] = 1
-    config["train_batch_size"] = int(config["train_batch_size"])
-    return config
-
-pbt = PopulationBasedTraining(
-    time_attr="time_total_s",
-    perturbation_interval=120,
-    resample_probability=0.25,
-    # Specifies the mutations of these hyperparams
-    hyperparam_mutations={
-        "lambda": lambda: random.uniform(0.9, 1.0),
-        "clip_param": lambda: random.uniform(0.01, 0.5),
-        "lr": [1e-3, 5e-4, 1e-4, 5e-5, 1e-5, 5e-6, 1e-6],
-        "num_sgd_iter": lambda: random.randint(1, 30),
-        "sgd_minibatch_size": lambda: random.randint(128, 4096),
-        "train_batch_size": lambda: random.randint(2000, 40000),
-        "gamma": lambda: random.uniform(0.8, 0.9997),
-        "kl_coeff": lambda: random.uniform(0.3, 1)
-    },
-    custom_explore_fn=explore)
-
 pb2 = PB2(
-    time_attr='time_total_s',
+    time_attr='training_iteration',
     metric="episode_reward_mean",
     mode="max",
-    perturbation_interval=120,
+    perturbation_interval=10,
     quantile_fraction=0.25,
     hyperparam_bounds={
         "lambda": [0.9, 1.0],
         "clip_param": [0.01, 0.5],
         "lr": [1e-6, 1e-3],
-        "num_sgd_iter": [1, 30],
-        "sgd_minibatch_size": [128, 4096],
-        "train_batch_size": [2000, 40000],
-        "gamma": [0.8, 0.9997],
-        "kl_coeff": [0.3, 1]
+        # "num_sgd_iter": [3, 30],
+        "train_batch_size": [8192, 40000]
+        # "gamma": [0.8, 0.9997],
+        # "kl_coeff": [0.3, 1],
+        # "vf_loss_coeff": [0.5, 1],
+        # "entropy_coeff": [0, 0.01],
     })
 
 analysis = tune.run(
     PPOTrainer,
-    name="HWalk_Low_Mimic",
+    name="HWalk_Low_Mimic_Search_5",
     resume=False,
     # restore="/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
     #     experiment_name, experiment_id, checkpoint_num, checkpoint_num
-    # )
+    # ),
     # if resume
     # else "",
     checkpoint_at_end=True,
     checkpoint_freq=10,
     checkpoint_score_attr="episode_reward_mean",
-    # scheduler=pb2,
-    # num_samples=4,
-    # stop={"timesteps_total": 5000000},
+    scheduler=pb2,
+    num_samples=5,
+    # stop={"episode_reward_mean": 1000},
     config=config_low_best,
 )
 
-# print("best hyperparameters: ", analysis.best_config)
+print("best hyperparameters: ", analysis.get_best_config("episode_reward_mean", "max"))

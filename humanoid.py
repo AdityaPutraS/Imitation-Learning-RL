@@ -11,7 +11,7 @@ import random
 # Didapat dari kode pybullet_env
 class CustomHumanoidRobot(WalkerBase):
     self_collision = True
-    foot_list = ["right_foot", "left_foot"]  # "left_hand", "right_hand"
+    foot_list = []
 
     def __init__(self):
         WalkerBase.__init__(
@@ -37,6 +37,10 @@ class CustomHumanoidRobot(WalkerBase):
         self.motor_power += [75, 75, 75]
         self.motor_names += ["left_shoulder_x", "left_shoulder_y", "left_elbow"]
         self.motor_power += [75, 75, 75]
+        self.motor_names += ["right_ankle_x", "right_ankle_y"]
+        self.motor_power += [100, 200]
+        self.motor_names += ["left_ankle_x", "left_ankle_y"]
+        self.motor_power += [100, 200]
         self.motors = [self.jdict[n] for n in self.motor_names]
         if self.random_yaw:
             yaw = self.np_random.uniform(low=-3.14, high=3.14)

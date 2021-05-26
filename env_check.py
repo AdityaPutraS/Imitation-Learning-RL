@@ -126,7 +126,7 @@ if __name__ == "__main__":
             i += 1
             done = False
             # env.render()
-            observation = env.reset(startFrame=0, resetYaw=0, startFromRef=True)
+            observation = env.resetFromFrame(startFrame=0, resetYaw=0, startFromRef=True)
             # drawAxis()
             pause = False
 
