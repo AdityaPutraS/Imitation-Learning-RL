@@ -316,10 +316,10 @@ class LowLevelHumanoidEnv(gym.Env):
         jointTargetObs = np.array(jointTargetObs)
 
         targetInfo = self.cur_obs[1:3]
-        jointInfo = self.cur_obs[8 : 8 + 17 * 2]
+        jointInfo = self.cur_obs[8 : 8 + 21 * 2]
 
         # return np.hstack((targetInfo, jointInfo, jointTargetObs))
-        return np.hstack((self.cur_obs[:-2], jointTargetObs))
+        return np.hstack((self.cur_obs, jointTargetObs))
 
     def step(self, action):
         return self.low_level_step(action)

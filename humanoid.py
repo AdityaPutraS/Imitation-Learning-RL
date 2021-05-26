@@ -18,7 +18,7 @@ class CustomHumanoidRobot(WalkerBase):
             self,
             "humanoid_symmetric_2.xml",
             "torso",
-            action_dim=17,
+            action_dim=21,
             obs_dim=44,
             power=0.41,
         )

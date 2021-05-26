@@ -34,8 +34,8 @@
                             <joint armature="0.0060" axis="0 -1 0" name="right_knee" pos="0 0 .02" range="-160 -2" stiffness="1" type="hinge"/>
                             <geom fromto="0 0 0 0 0 -.3" name="right_shin1" size="0.049" type="capsule"/>
                             <body name="right_foot" pos="0 0 -0.45">
-                                <joint armature="0.01" axis="0 1 0" name="right_ankle_y" pos="0 0 0" range="-120 60" stiffness="10" type="hinge"/>
-                                <joint armature="0.01" axis="1 0 0" name="right_ankle_x" pos="0 0 0" range="-25 0" stiffness="10" type="hinge"/>
+                                <joint armature="0.01" axis="1 0 0" name="right_ankle_x" pos="0 0 0.1" range="-10 10" stiffness="10" type="hinge"/>
+                                <joint armature="0.01" axis="0 1 0" name="right_ankle_y" pos="0 0 0.1" range="-20 40" stiffness="20" type="hinge"/>
                                 <geom name="right_foot" pos="0.05 0 0.1" size="0.15 0.075 0.015" type="box" user="0"/>
                             </body>
                         </body>
@@ -49,8 +49,8 @@
                             <joint armature="0.0060" axis="0 -1 0" name="left_knee" pos="0 0 .02" range="-160 -2" stiffness="1" type="hinge"/>
                             <geom fromto="0 0 0 0 0 -.3" name="left_shin1" size="0.049" type="capsule"/>
                             <body name="left_foot" pos="0 0 -0.45">
-                                <joint armature="0.01" axis="0 1 0" name="left_ankle_y" pos="0 0 0" range="-120 60" stiffness="10" type="hinge"/>
-                                <joint armature="0.01" axis="-1 0 0" name="left_ankle_x" pos="0 0 0" range="-25 0" stiffness="10" type="hinge"/>
+                                <joint armature="0.01" axis="-1 0 0" name="left_ankle_x" pos="0 0 0.1" range="-10 10" stiffness="10" type="hinge"/>
+                                <joint armature="0.01" axis="0 1 0" name="left_ankle_y" pos="0 0 0.1" range="-20 40" stiffness="20" type="hinge"/>
                                 <geom name="left_foot" type="box" size="0.15 0.075 0.015" pos="0.05 0 0.1" user="0" />
                             </body>
                         </body>
