@@ -65,7 +65,7 @@ pb2 = PB2(
 
 analysis = tune.run(
     PPOTrainer,
-    name="HWalk_Low_Mimic_Search_5",
+    name="HWalk_Low_Mimic_Search_7",
     resume=False,
     # restore="/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
     #     experiment_name, experiment_id, checkpoint_num, checkpoint_num
@@ -75,8 +75,8 @@ analysis = tune.run(
     checkpoint_at_end=True,
     checkpoint_freq=10,
     checkpoint_score_attr="episode_reward_mean",
-    scheduler=pb2,
-    num_samples=5,
+    # scheduler=pb2,
+    # num_samples=5,
     # stop={"episode_reward_mean": 1000},
     config=config_low_best,
 )

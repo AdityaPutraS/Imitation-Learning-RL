@@ -74,9 +74,9 @@ if __name__ == "__main__":
             useCustomEnv = True
             print("Selesai load model custom env motion 09_03")
         elif(model == 'l'):
-            experiment_name = "HWalk_Low_Mimic_Search_5"
-            experiment_id = "PPO_HumanoidBulletEnv-v0-Low_a1b2b_00001_1_2021-05-26_20-49-09"
-            checkpoint_num = "210"
+            experiment_name = "HWalk_Low_Mimic_Search_7"
+            experiment_id = "PPO_HumanoidBulletEnv-v0-Low_73dc9_00000_0_2021-05-27_21-43-00"
+            checkpoint_num = "5480"
             motion_used = "motion09_03"
             useCustomEnv = False
             print("Selesai load model latest")
@@ -165,7 +165,7 @@ if __name__ == "__main__":
         while not doneAll:
             done = False
             env.render()
-            observation = env.resetFromFrame(startFrame=0, startFromRef=False, initVel=False)
+            observation = env.resetFromFrame(startFrame=0, startFromRef=True, initVel=True)
             if(useCustomEnv and tipeTarget == 'tanjakan'):
                 env.flat_env.stadium_scene.replaceHeightfieldData(terrainData)
                 print("Selesai replace heightfield")

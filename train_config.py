@@ -92,7 +92,7 @@ config_low_best = {
     "num_envs_per_worker": 5,
     "log_level": "WARN",
     "num_gpus": 1,
-    "monitor": False,
+    "monitor": True,
     "evaluation_num_episodes": 50,
     "gamma": 0.99,
     "lambda": 0.9,

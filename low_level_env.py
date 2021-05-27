@@ -51,7 +51,7 @@ class LowLevelHumanoidEnv(gym.Env):
         #       Sudut & vel tiap sendi (21)
         #       Sudut & vel tiap sendi referensi (14 [semua kecuali abdomen(3 sendi) + ankle(2 sendi per kaki, total 4)])
         self.observation_space = Box(
-            low=-np.inf, high=np.inf, shape=[8 + 21 * 2 + 14 * 2]
+            low=-np.inf, high=np.inf, shape=[8 + 19 * 2 + 14 * 2]
         )  # Foot contact tidak dimasukan
         self.action_space = self.flat_env.action_space
 
@@ -119,20 +119,20 @@ class LowLevelHumanoidEnv(gym.Env):
         self.joint_weight_sum = sum(self.joint_weight.values())
 
         self.joint_vel_weight = {
-            "right_knee": 3,
+            "right_knee": 1,
             "right_hip_x": 1,
-            "right_hip_y": 3,
+            "right_hip_y": 1,
             "right_hip_z": 1,
-            "left_knee": 3,
+            "left_knee": 1,
             "left_hip_x": 1,
-            "left_hip_y": 3,
+            "left_hip_y": 1,
             "left_hip_z": 1,
             "right_shoulder_x": 0.1,
-            "right_shoulder_y": 0.3,
-            "right_elbow": 0.3,
+            "right_shoulder_y": 0.1,
+            "right_elbow": 0.1,
             "left_shoulder_x": 0.1,
-            "left_shoulder_y": 0.3,
-            "left_elbow": 0.3,
+            "left_shoulder_y": 0.1,
+            "left_elbow": 0.1,
         }
         self.joint_vel_weight_sum = sum(self.joint_vel_weight.values())
 
@@ -225,7 +225,8 @@ class LowLevelHumanoidEnv(gym.Env):
 
     def reset(self, resetYaw=0):
         # Insialisasi dengan posisi awal random sesuai referensi
-        useReference = self.rng.integers(0, 100) <= 80
+        # useReference = self.rng.integers(0, 100) <= 80
+        useReference = True
         return self.resetFromFrame(
             startFrame=self.rng.integers(0, self.max_frame - 5) if useReference else 0,
             resetYaw=resetYaw,
@@ -293,7 +294,7 @@ class LowLevelHumanoidEnv(gym.Env):
         if(startFromRef and initVel):
             rightLegPosRef = rotDeg.apply(getJointPos(endPointRef, "RightLeg"))
             rightLegPosRefNext = rotDeg.apply(getJointPos(endPointRefNext, "RightLeg"))
-            startingVelocity = (rightLegPosRefNext - rightLegPosRef) / 0.0165
+            startingVelocity = ((rightLegPosRefNext - rightLegPosRef) / 0.0165) / 1.2
             self.flat_env.robot.robot_body.reset_velocity(linearVelocity=startingVelocity)
 
         self.initReward()
@@ -462,13 +463,13 @@ class LowLevelHumanoidEnv(gym.Env):
         useExp = True
         jointScore = self.calcJointScore(useExp=useExp)
         jointVelScore = self.calcJointVelScore(useExp=useExp)
-        endPointScore = self.calcEndPointScore(useExp=useExp)
+        # endPointScore = self.calcEndPointScore(useExp=useExp)
         lowTargetScore = self.calcLowLevelTargetScore()
         bodyPostureScore = self.calcBodyPostureScore(useExp=useExp)
 
         self.delta_deltaJoints = (jointScore - self.deltaJoints) / 0.0165
         self.delta_deltaVelJoints = (jointVelScore - self.deltaVelJoints) / 0.0165 * 0.1
-        self.delta_deltaEndPoints = (endPointScore - self.deltaEndPoints) / 0.0165
+        # self.delta_deltaEndPoints = (endPointScore - self.deltaEndPoints) / 0.0165
         self.delta_lowTargetScore = (
             (lowTargetScore - self.lowTargetScore) / 0.0165 * 0.1
         )
@@ -476,7 +477,7 @@ class LowLevelHumanoidEnv(gym.Env):
 
         self.deltaJoints = jointScore
         self.deltaVelJoints = jointVelScore
-        self.deltaEndPoints = endPointScore
+        # self.deltaEndPoints = endPointScore
         self.lowTargetScore = lowTargetScore
         # self.baseReward = base_reward
         self.electricityScore = self.calcElectricityCost(action)
@@ -521,7 +522,7 @@ class LowLevelHumanoidEnv(gym.Env):
         # rewardWeight = [0.4 , 0.2 , 0.08, 0.04, 0.16, 0.04, 0.08] # Weight (23-32-16)
         # rewardWeight = [0.34, 0.1, 0.34, 0.034, 0.1, 0.034, 0.067] # Weight (15-06-17)
 
-        rewardWeight = [0.34, 0.1, 0.34, 0.034, 0.1, 0.034, 0.1] # Weight untuk PB2, Maks reward yang realistis: 104 (episode_len_mean = 2000)
+        rewardWeight = [0.34, 0.1, 0.34, 0.034, 0.15, 0.034, 0.2] # Weight untuk PB2
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):

@@ -18,12 +18,10 @@ class CustomHumanoidRobot(WalkerBase):
             self,
             "humanoid_symmetric_2.xml",
             "torso",
-            action_dim=21,
+            action_dim=19,
             obs_dim=44,
             power=0.41,
         )
-
-    # 17 joints, 4 of them important for walking (hip, knee), others may as well be turned off, 17/4 = 4.25
 
     def robot_specific_reset(self, bullet_client):
         WalkerBase.robot_specific_reset(self, bullet_client)
@@ -37,10 +35,10 @@ class CustomHumanoidRobot(WalkerBase):
         self.motor_power += [75, 75, 75]
         self.motor_names += ["left_shoulder_x", "left_shoulder_y", "left_elbow"]
         self.motor_power += [75, 75, 75]
-        self.motor_names += ["right_ankle_x", "right_ankle_y"]
-        self.motor_power += [100, 200]
-        self.motor_names += ["left_ankle_x", "left_ankle_y"]
-        self.motor_power += [100, 200]
+        self.motor_names += ["right_ankle_y"]
+        self.motor_power += [200]
+        self.motor_names += ["left_ankle_y"]
+        self.motor_power += [200]
         self.motors = [self.jdict[n] for n in self.motor_names]
         if self.random_yaw:
             yaw = self.np_random.uniform(low=-3.14, high=3.14)
@@ -60,7 +58,7 @@ class CustomHumanoidRobot(WalkerBase):
     def apply_action(self, a):
         assert np.isfinite(a).all()
         force_gain = 1
-        for i, m, power in zip(range(17), self.motors, self.motor_power):
+        for i, m, power in zip(range(19), self.motors, self.motor_power):
             m.set_motor_torque(
                 float(force_gain * power * self.power * np.clip(a[i], -1, +1))
             )
