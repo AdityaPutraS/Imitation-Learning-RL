@@ -12,9 +12,6 @@ from ray import tune
 from ray.tune import function
 from ray.rllib.agents.ppo import PPOTrainer
 from ray.rllib.agents.pg import PGTrainer
-from ray.rllib.agents.ddpg import DDPGTrainer
-from ray.rllib.agents.ddpg import ApexDDPGTrainer
-from ray.rllib.agents.impala import ImpalaTrainer
 from ray.rllib.agents.a3c import A2CTrainer, A3CTrainer
 from ray.tune.registry import register_env
 
@@ -26,9 +23,6 @@ from train_config import (
     config_low_best,
     config_low_best_2,
     config_low_pg,
-    config_low_ddpg,
-    config_low_impala,
-    config_low_apex_ddpg,
     config_low_a2c,
 )
 
@@ -81,4 +75,4 @@ analysis = tune.run(
     config=config_low_best,
 )
 
-print("best hyperparameters: ", analysis.get_best_config("episode_reward_mean", "max"))
+# print("best hyperparameters: ", analysis.get_best_config("episode_reward_mean", "max"))

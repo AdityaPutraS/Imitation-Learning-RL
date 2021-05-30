@@ -25,14 +25,17 @@ from ray.tune import CLIReporter
 
 import os
 
-experiment_name = "HWalk_Low_Mimic"
-experiment_id = "PPO_HumanoidBulletEnv-v0-Low_1513b_00000_0_2021-05-11_15-04-09"
-checkpoint_num = "5520"
+# experiment_name = "HWalk_Low_Mimic"
+# experiment_id = "PPO_HumanoidBulletEnv-v0-Low_1513b_00000_0_2021-05-11_15-04-09"
+# checkpoint_num = "5520"
+experiment_name = "HWalk_Low_Mimic_Search_7"
+experiment_id = "PPO_HumanoidBulletEnv-v0-Low_baa74_00000_0_2021-05-29_19-26-36"
+checkpoint_num = "9320"
 
 
-experiment_name_hier = "HWalk_Hier_Mimic"
-experiment_id_hier = "train_HumanoidBulletEnvHier-v0_1e619_00000_0_2021-05-15_11-53-33"
-checkpoint_num_hier = "430"
+experiment_name_hier = "HWalk_Hier_Mimic_7"
+experiment_id_hier = "train_HumanoidBulletEnvHier-v0_83822_00000_0_2021-05-30_14-37-33"
+checkpoint_num_hier = "1"
 
 # Cara train:
 # Load model low level terlebih dahulu dengan set resumeFromCheckpoint=False,  useModelFromLowLevelTrain=True
@@ -91,7 +94,7 @@ if __name__ == "__main__":
     resources = PPOTrainer.default_resource_request(config_hier).to_json()
     tune.run(
         train,
-        name="HWalk_Hier_Mimic",
+        name="HWalk_Hier_Mimic_7",
         # resume=resume,
         restore="/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name_hier,

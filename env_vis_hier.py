@@ -13,6 +13,7 @@ from collections import OrderedDict
 
 from math_util import projPointLineSegment
 
+from humanoid import CustomHumanoidRobot
 
 def drawLine(c1, c2, color):
     return pybullet.addUserDebugLine(c1, c2, lineColorRGB=color, lineWidth=5, lifeTime=0.1)
@@ -47,7 +48,7 @@ if __name__ == "__main__":
     model = input("Jenis model (08_03, 09_03, quit): ").lower()
     while(model != 'quit'):
 
-        env = HierarchicalHumanoidEnv()
+        env = HierarchicalHumanoidEnv(customRobot=CustomHumanoidRobot())
         env.max_timestep = 100000
         env.usePredefinedTarget = True
 
@@ -128,7 +129,7 @@ if __name__ == "__main__":
             observation = env.resetFromFrame(startFrame=None)
             drawAxis()
             if(not(logStarted)):
-                # pybullet.startStateLogging(pybullet.STATE_LOGGING_VIDEO_MP4, "./out/video/hier_{}_{}_{}_{}.mp4".format(experiment_id[-19:], checkpoint_num, model, tipeTarget))
+                pybullet.startStateLogging(pybullet.STATE_LOGGING_VIDEO_MP4, "./out/video/hier_{}_{}_{}_{}.mp4".format(experiment_id[-19:], checkpoint_num, model, tipeTarget))
                 logStarted = True
             pause = True
             while not done and not doneAll:

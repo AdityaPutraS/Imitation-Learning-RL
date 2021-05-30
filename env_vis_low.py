@@ -75,9 +75,9 @@ if __name__ == "__main__":
             print("Selesai load model custom env motion 09_03")
         elif(model == 'l'):
             experiment_name = "HWalk_Low_Mimic_Search_7"
-            experiment_id = "PPO_HumanoidBulletEnv-v0-Low_73dc9_00000_0_2021-05-27_21-43-00"
-            checkpoint_num = "5480"
-            motion_used = "motion09_03"
+            experiment_id = "PPO_HumanoidBulletEnv-v0-Low_baa74_00000_0_2021-05-29_19-26-36"
+            checkpoint_num = "9320"
+            motion_used = "motion08_03"
             useCustomEnv = False
             print("Selesai load model latest")
         else:
@@ -180,6 +180,8 @@ if __name__ == "__main__":
                 if not pause:
                     action = agent.compute_action(observation)
                     observation, reward, f_done, info = env.step(action)
+                    # if(f_done):
+                    #     print("#DONE")
                     # done = f_done
                     # drift.append(calcDrift(env.robot_pos, env.starting_robot_pos, env.target))
                 

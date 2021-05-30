@@ -14,6 +14,8 @@ from scipy.spatial.transform import Rotation as R
 import json
 import copy
 
+from humanoid import CustomHumanoidRobot
+
 
 def drawLine(c1, c2, color):
     return pybullet.addUserDebugLine(
@@ -48,9 +50,12 @@ if __name__ == "__main__":
     ray.init(ignore_reinit_error=True)
 
     agent = PPOTrainer(config_low)
-    experiment_name = "HWalk_Low_Mimic"
-    experiment_id = "PPO_HumanoidBulletEnv-v0-Low_68eec_00000_0_2021-05-01_23-32-16"
-    checkpoint_num = "1610"
+    # experiment_name = "HWalk_Low_Mimic"
+    # experiment_id = "PPO_HumanoidBulletEnv-v0-Low_68eec_00000_0_2021-05-01_23-32-16"
+    # checkpoint_num = "1610"
+    experiment_name = "HWalk_Low_Mimic_Search_7"
+    experiment_id = "PPO_HumanoidBulletEnv-v0-Low_baa74_00000_0_2021-05-29_19-26-36"
+    checkpoint_num = "9320"
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name, experiment_id, checkpoint_num, checkpoint_num
@@ -59,7 +64,7 @@ if __name__ == "__main__":
 
     motion_used = "motion08_03"
     # motion_used = "motion09_03"
-    env = LowLevelHumanoidEnv(reference_name=motion_used)
+    env = LowLevelHumanoidEnv(reference_name=motion_used, customRobot=CustomHumanoidRobot())
     env.usePredefinedTarget = True
     
     # Kotak
@@ -126,7 +131,7 @@ if __name__ == "__main__":
             i += 1
             done = False
             # env.render()
-            observation = env.resetFromFrame(startFrame=0, resetYaw=0, startFromRef=True)
+            observation = env.resetFromFrame(startFrame=0, resetYaw=0, startFromRef=True, initVel=True)
             # drawAxis()
             pause = False
 
@@ -134,7 +139,7 @@ if __name__ == "__main__":
             while not done and not doneAll:
                 if not pause:
                     action = agent.compute_action(observation)
-                    observation, reward, f_done, info = env.step(action)
+                    observation, reward, f_done, info = env.step(action, debug=True)
                     done = f_done
                     drift.append(calcDrift(env.robot_pos, env.starting_robot_pos, env.target))
                 # drawLine(

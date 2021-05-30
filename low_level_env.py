@@ -151,8 +151,6 @@ class LowLevelHumanoidEnv(gym.Env):
         }
         self.end_point_weight_sum = sum(self.end_point_weight.values())
 
-        self.initReward()
-
         self.target = np.array([1, 0, 0])
         self.targetLen = 5
         self.highLevelDegTarget = 0
@@ -225,7 +223,6 @@ class LowLevelHumanoidEnv(gym.Env):
 
     def reset(self, resetYaw=0):
         # Insialisasi dengan posisi awal random sesuai referensi
-        # useReference = self.rng.integers(0, 100) <= 80
         useReference = True
         return self.resetFromFrame(
             startFrame=self.rng.integers(0, self.max_frame - 5) if useReference else 0,
@@ -316,14 +313,14 @@ class LowLevelHumanoidEnv(gym.Env):
             jointTargetObs.append(jointsVelRef[self.joint_map[jMap]])
         jointTargetObs = np.array(jointTargetObs)
 
-        targetInfo = self.cur_obs[1:3]
-        jointInfo = self.cur_obs[8 : 8 + 21 * 2]
+        # targetInfo = self.cur_obs[1:3]
+        # jointInfo = self.cur_obs[8 : 8 + 21 * 2]
 
         # return np.hstack((targetInfo, jointInfo, jointTargetObs))
         return np.hstack((self.cur_obs, jointTargetObs))
 
-    def step(self, action):
-        return self.low_level_step(action)
+    def step(self, action, debug=False):
+        return self.low_level_step(action, debug=debug)
 
     def calcJointScore(self, useExp=False):
         deltaJoints = 0
@@ -340,10 +337,7 @@ class LowLevelHumanoidEnv(gym.Env):
 
         score = -deltaJoints / self.joint_weight_sum
         if(useExp):
-            # score = np.exp(score)
-            # return (score * 3) - 2.3
             score = np.exp(4 * score)
-            return score
         return score
 
     def calcJointVelScore(self, useExp=False):
@@ -361,8 +355,6 @@ class LowLevelHumanoidEnv(gym.Env):
 
         score = -deltaVel / self.joint_vel_weight_sum
         if(useExp):
-            # score = np.exp(score)
-            # return (score * 3) - 1.8
             score = np.exp(score / 2)
         return score
 
@@ -382,23 +374,16 @@ class LowLevelHumanoidEnv(gym.Env):
             )
             # drawLine(v1, v2, [1, 0, 0])
             deltaVec = v2 - v1
-            dist = np.linalg.norm(deltaVec)
-            deltaEndPoint += dist * self.end_point_weight[epMap]
+            deltaEndPoint += np.linalg.norm(deltaVec) * self.end_point_weight[epMap]
 
         score = -deltaEndPoint / self.end_point_weight_sum
         if(useExp):
-            # score = np.exp(10 * score)
-            # return 2 * score - 0.5
             score = np.exp(3 * score)
         return score
-
-    def calcJumpReward(self, obs):
-        return 0
 
     def calcAliveReward(self):
         # Didapat dari perhitungan reward alive env humanoid
         z = self.cur_obs[0] + self.flat_env.robot.initial_z
-        # return +2 if z > 0.78 else -1
         return +2 if z > 0.75 else -1
 
     def calcElectricityCost(self, action):
@@ -437,12 +422,6 @@ class LowLevelHumanoidEnv(gym.Env):
             drawLine(self.target, newTarget, [1, 0, 0], lifeTime=0)
             self.starting_robot_pos = self.target.copy()
             self.target = newTarget
-
-            # Fix posisi starting ep pos
-            distRobotStartEP = np.linalg.norm(self.robot_pos - self.starting_ep_pos)
-            normVecRobotTarget = self.target - self.robot_pos
-            normVecRobotTarget /= np.linalg.norm(normVecRobotTarget)
-            self.starting_ep_pos = self.robot_pos.copy() + distRobotStartEP * -normVecRobotTarget
             
             # Reset lowTargetScore agar delta_lowTargetScore tidak lompat jauh nilainya
             self.lowTargetScore = -np.linalg.norm(
@@ -485,12 +464,15 @@ class LowLevelHumanoidEnv(gym.Env):
         self.aliveReward = self.calcAliveReward()
         self.bodyPostureScore = bodyPostureScore
 
-    def checkIfDone(self):
+    def checkIfDone(self, debug=False):
         isAlive = self.aliveReward > 0
-        isNearTarget = np.linalg.norm(self.target - self.robot_pos) <= np.linalg.norm(self.target - self.starting_robot_pos) + 1
-        return not(isAlive and isNearTarget)
+        isNearTarget = np.linalg.norm(self.target - self.robot_pos) <= np.linalg.norm(self.target - self.starting_robot_pos) + 0.5
+        if(debug):
+            return not(isAlive)
+        else:
+            return not(isAlive and isNearTarget)
 
-    def low_level_step(self, action):
+    def low_level_step(self, action, debug=False):
         # Step di env yang sebenarnya
         # f_obs, f_rew, f_done, _ = self.flat_env.step(action)
         self.flat_env.robot.apply_action(action)
@@ -522,7 +504,7 @@ class LowLevelHumanoidEnv(gym.Env):
         # rewardWeight = [0.4 , 0.2 , 0.08, 0.04, 0.16, 0.04, 0.08] # Weight (23-32-16)
         # rewardWeight = [0.34, 0.1, 0.34, 0.034, 0.1, 0.034, 0.067] # Weight (15-06-17)
 
-        rewardWeight = [0.34, 0.1, 0.34, 0.034, 0.15, 0.034, 0.2] # Weight untuk PB2
+        rewardWeight = [0.34, 0.1, 0.34, 0.034, 0.15, 0.034, 0.067] # Weight untuk PB2
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):
@@ -535,8 +517,8 @@ class LowLevelHumanoidEnv(gym.Env):
         # self.drawDebugRobotPosLine()
 
         obs = self.getLowLevelObs()
-
-        done = self.checkIfDone()
+        
+        done = self.checkIfDone(debug=debug)
         self.cur_timestep += 1
         if self.cur_timestep >= self.max_timestep:
             done = True

@@ -12,12 +12,12 @@ from humanoid import CustomHumanoidRobot
 
 def make_env_low(env_config):
     import pybullet_envs
-    return LowLevelHumanoidEnv(reference_name="motion09_03", useCustomEnv=False, customRobot=CustomHumanoidRobot())
+    return LowLevelHumanoidEnv(reference_name="motion08_03", useCustomEnv=False, customRobot=CustomHumanoidRobot())
 
 
 def make_env_hier(env_config):
     import pybullet_envs
-    return HierarchicalHumanoidEnv()
+    return HierarchicalHumanoidEnv(customRobot=CustomHumanoidRobot())
 
 
 def policy_mapping_fn(agent_id):
@@ -257,7 +257,7 @@ config_low_a2c = {
     "rollout_fragment_length": 10,
 }
 
-single_env = HierarchicalHumanoidEnv()
+single_env = HierarchicalHumanoidEnv(customRobot=CustomHumanoidRobot())
 ENV_HIER = "HumanoidBulletEnvHier-v0"
 highLevelPolicy = (
     None,
@@ -289,7 +289,7 @@ config_hier = {
     "env": ENV_HIER,
     "callbacks": RewardLogCallback,
     "num_workers": 6,
-    "num_envs_per_worker": 20,
+    "num_envs_per_worker": 5,
     "multiagent": {
         "policies": {
             "high_level_policy": highLevelPolicy,
@@ -301,46 +301,20 @@ config_hier = {
     "num_gpus": 1,
     "monitor": True,
     "evaluation_num_episodes": 50,
-    "gamma": 0.995,
-    "lambda": 0.95,
-    "clip_param": 0.2,
-    "kl_coeff": 1.0,
-    "num_sgd_iter": 20,
-    "lr": 0.00005,
-    "vf_clip_param": 10,
-    "sgd_minibatch_size": 512,
-    "train_batch_size": 6000,
-    "batch_mode": "complete_episodes",
-    "observation_filter": "NoFilter",
-}
-
-config_hier_best = {
-    "env": ENV_HIER,
-    "callbacks": RewardLogCallback,
-    "num_workers": 6,
-    "num_envs_per_worker": 10,
-    "multiagent": {
-        "policies": {
-            "high_level_policy": highLevelPolicy,
-            "low_level_policy": lowLevelPolicy,
-        },
-        "policy_mapping_fn": function(policy_mapping_fn),
-    },
-    "log_level": "WARN",
-    "num_gpus": 1,
-    "monitor": True,
-    "evaluation_num_episodes": 50,
-    "gamma": 0.9997,
-    "lambda": 0.901324,
+    "gamma": 0.99,
+    "lambda": 0.9,
     "clip_param": 0.5,
-    "kl_coeff": 0.505869,
+    "kl_coeff": 0.2,
     "num_sgd_iter": 30,
-    "lr": 5.927e-5,
+    "lr": 5e-5,
     "vf_clip_param": 10,
     "sgd_minibatch_size": 4096,
-    "train_batch_size": 8431,
+    "train_batch_size": 8192,
+    "vf_loss_coeff": 1,
+    "entropy_coeff": 0,
     "batch_mode": "complete_episodes",
     "observation_filter": "NoFilter",
+    "framework": "tf",
 }
 
 register_env(ENV_HIER, make_env_hier)
