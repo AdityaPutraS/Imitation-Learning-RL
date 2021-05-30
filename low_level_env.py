@@ -48,10 +48,10 @@ class LowLevelHumanoidEnv(gym.Env):
         # )
         # Observation = 
         #       8 Data robot
-        #       Sudut & vel tiap sendi (21)
+        #       Sudut & vel tiap sendi (17)
         #       Sudut & vel tiap sendi referensi (14 [semua kecuali abdomen(3 sendi) + ankle(2 sendi per kaki, total 4)])
         self.observation_space = Box(
-            low=-np.inf, high=np.inf, shape=[8 + 19 * 2 + 14 * 2]
+            low=-np.inf, high=np.inf, shape=[8 + 17 * 2 + 14 * 2]
         )  # Foot contact tidak dimasukan
         self.action_space = self.flat_env.action_space
 
@@ -466,7 +466,7 @@ class LowLevelHumanoidEnv(gym.Env):
 
     def checkIfDone(self, debug=False):
         isAlive = self.aliveReward > 0
-        isNearTarget = np.linalg.norm(self.target - self.robot_pos) <= np.linalg.norm(self.target - self.starting_robot_pos) + 0.5
+        isNearTarget = np.linalg.norm(self.target - self.robot_pos) <= np.linalg.norm(self.target - self.starting_robot_pos) + 3
         if(debug):
             return not(isAlive)
         else:
@@ -504,7 +504,7 @@ class LowLevelHumanoidEnv(gym.Env):
         # rewardWeight = [0.4 , 0.2 , 0.08, 0.04, 0.16, 0.04, 0.08] # Weight (23-32-16)
         # rewardWeight = [0.34, 0.1, 0.34, 0.034, 0.1, 0.034, 0.067] # Weight (15-06-17)
 
-        rewardWeight = [0.34, 0.1, 0.34, 0.034, 0.15, 0.034, 0.067] # Weight untuk PB2
+        rewardWeight = [0.34, 0.1, 0.34, 0.034, 0.15, 0.034, 0.1] # Weight untuk PB2
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):

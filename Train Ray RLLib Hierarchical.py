@@ -29,12 +29,12 @@ import os
 # experiment_id = "PPO_HumanoidBulletEnv-v0-Low_1513b_00000_0_2021-05-11_15-04-09"
 # checkpoint_num = "5520"
 experiment_name = "HWalk_Low_Mimic_Search_7"
-experiment_id = "PPO_HumanoidBulletEnv-v0-Low_baa74_00000_0_2021-05-29_19-26-36"
-checkpoint_num = "9320"
+experiment_id = "PPO_HumanoidBulletEnv-v0-Low_c48aa_00000_0_2021-05-28_13-22-59"
+checkpoint_num = "8430"
 
 
 experiment_name_hier = "HWalk_Hier_Mimic_7"
-experiment_id_hier = "train_HumanoidBulletEnvHier-v0_83822_00000_0_2021-05-30_14-37-33"
+experiment_id_hier = "train_HumanoidBulletEnvHier-v0_eeabd_00000_0_2021-05-30_18-15-17"
 checkpoint_num_hier = "1"
 
 # Cara train:

@@ -68,10 +68,11 @@ if __name__ == "__main__":
             env.selected_motion = 1
             print("Selesai load model motion 09_03")
         elif(model == "l"):
-            experiment_id = "train_HumanoidBulletEnvHier-v0_19570_00000_0_2021-05-16_19-01-43"
-            checkpoint_num = "330"
-            env.selected_motion = 1
-            print("Selesai load model motion 09_03")
+            experiment_name = "HWalk_Hier_Mimic_7"
+            experiment_id = "train_HumanoidBulletEnvHier-v0_a8e83_00000_0_2021-05-30_14-38-35"
+            checkpoint_num = "1160"
+            env.selected_motion = 0
+            print("Selesai load model latest")
 
         agent.restore(
             "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint_{}/checkpoint-{}".format(
@@ -126,7 +127,7 @@ if __name__ == "__main__":
         while not doneAll:
             done = False
             env.render()
-            observation = env.resetFromFrame(startFrame=None)
+            observation = env.resetFromFrame(startFrame=0, startFromRef=True, initVel=True)
             drawAxis()
             if(not(logStarted)):
                 pybullet.startStateLogging(pybullet.STATE_LOGGING_VIDEO_MP4, "./out/video/hier_{}_{}_{}_{}.mp4".format(experiment_id[-19:], checkpoint_num, model, tipeTarget))

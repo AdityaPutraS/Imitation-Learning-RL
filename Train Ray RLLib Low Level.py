@@ -59,7 +59,7 @@ pb2 = PB2(
 
 analysis = tune.run(
     PPOTrainer,
-    name="HWalk_Low_Mimic_Search_7",
+    name="HWalk_Low_Mimic_Final",
     resume=False,
     # restore="/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint-{}".format(
     #     experiment_name, experiment_id, checkpoint_num, checkpoint_num

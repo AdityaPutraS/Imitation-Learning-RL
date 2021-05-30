@@ -47,12 +47,12 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         self.motion_list = ["motion08_03", "motion09_03"]
 
-        self.high_level_obs_space = Box(low=-np.inf, high=np.inf, shape=[8 + 19*2 + 2])
+        self.high_level_obs_space = Box(low=-np.inf, high=np.inf, shape=[8 + 17*2 + 2])
         self.high_level_act_space = Box(
             low=-1, high=1, shape=[2]
         )  # cos(target), sin(target)
 
-        self.low_level_obs_space = Box(low=-np.inf, high=np.inf, shape=[8 + 19 * 2 + 14 * 2])
+        self.low_level_obs_space = Box(low=-np.inf, high=np.inf, shape=[8 + 17 * 2 + 14 * 2])
         self.low_level_act_space = self.flat_env.action_space
 
         self.step_per_level = 5
@@ -167,7 +167,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         self.skipFrame = 2
 
         # Menandakan motion apa yang harus dijalankan sekarang dan pada frame berapa
-        self.selected_motion = 0
+        self.selected_motion = 1
         self.selected_motion_frame = 0
 
         self.starting_ep_pos = np.array([0, 0, 0])
@@ -570,12 +570,15 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
         done = {"__all__": False}
         return obs, rew, done, {}
 
-    def checkIfDone(self):
+    def checkIfDone(self, debug=False):
         isAlive = self.aliveReward > 0
         isNearTarget = (
             np.linalg.norm(self.target - self.robot_pos) <= np.linalg.norm(self.target - self.starting_robot_pos) + 1
         )
-        return not (isAlive and isNearTarget)
+        if(debug):
+            return not(isAlive)
+        else:
+            return not(isAlive and isNearTarget)
 
     def low_level_step(self, action, debug=False):
         self.steps_remaining_at_level -= 1
@@ -601,7 +604,7 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
             self.bodyPostureScore,
         ]
 
-        rewardWeight = [0.34, 0.1, 0.34, 0.034, 0.15, 0.034, 0.067]
+        rewardWeight = [0.34, 0.1, 0.34, 0.034, 0.15, 0.034, 0.1]
 
         totalReward = 0
         for r, w in zip(reward, rewardWeight):
@@ -611,15 +614,12 @@ class HierarchicalHumanoidEnv(MultiAgentEnv):
 
         self.checkTarget()
 
-        if(debug):
-            self.drawDebugRobotPosLine()
+        # self.drawDebugRobotPosLine()
 
         rew, obs = dict(), dict()
         # Handle env termination & transitions back to higher level
         done = {"__all__": False}
-        f_done = False
-        if(not debug):
-            f_done = self.checkIfDone()
+        f_done = self.checkIfDone(debug=debug)
         self.cur_timestep += 1
         if f_done or (self.cur_timestep >= self.max_timestep):
             self.updateRewardHigh()

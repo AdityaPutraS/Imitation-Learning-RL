@@ -12,7 +12,7 @@ from humanoid import CustomHumanoidRobot
 
 def make_env_low(env_config):
     import pybullet_envs
-    return LowLevelHumanoidEnv(reference_name="motion08_03", useCustomEnv=False, customRobot=CustomHumanoidRobot())
+    return LowLevelHumanoidEnv(reference_name="motion09_03", useCustomEnv=False, customRobot=CustomHumanoidRobot())
 
 
 def make_env_hier(env_config):
@@ -158,7 +158,7 @@ config_low_pg = {
     "lr": 0.005,
     "train_batch_size": 300,
     "model": {
-        "fcnet_hiddens": [256, 128],
+        "fcnet_hiddens": [256, 256],
         "fcnet_activation": "tanh",
         "free_log_std": True,
     },

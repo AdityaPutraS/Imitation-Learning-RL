@@ -17,6 +17,8 @@ from scipy.spatial.transform import Rotation as R
 import json
 import copy
 
+from humanoid import CustomHumanoidRobot
+
 def drawLine(c1, c2, color):
     return pybullet.addUserDebugLine(c1, c2, lineColorRGB=color, lineWidth=5, lifeTime=0.1)
 
@@ -46,13 +48,13 @@ if __name__ == "__main__":
     ray.shutdown()
     ray.init(ignore_reinit_error=True)
 
-    single_env = HierarchicalHumanoidEnv()
+    single_env = HierarchicalHumanoidEnv(customRobot=CustomHumanoidRobot())
 
     
     agent = PPOTrainer(config_hier)
-    experiment_name = "HWalk_Hier_Mimic"
-    experiment_id = "train_HumanoidBulletEnvHier-v0_88b64_00000_0_2021-05-02_12-26-15"
-    checkpoint_num = "960"
+    experiment_name = "HWalk_Hier_Mimic_7"
+    experiment_id = "train_HumanoidBulletEnvHier-v0_a8e83_00000_0_2021-05-30_14-38-35"
+    checkpoint_num = "1490"
     agent.restore(
         "/home/aditya/ray_results/{}/{}/checkpoint_{}/checkpoint_{}/checkpoint-{}".format(
             experiment_name, experiment_id, checkpoint_num, checkpoint_num, checkpoint_num
@@ -87,7 +89,7 @@ if __name__ == "__main__":
     # importedPolicy["_optimizer_variables"] = importedOptState
     # agent.get_policy("low_level_policy").set_state(importedPolicy)
 
-    env = HierarchicalHumanoidEnv()
+    env = HierarchicalHumanoidEnv(customRobot=CustomHumanoidRobot())
     env.selected_motion = 0
     env.usePredefinedTarget = True
 
@@ -156,7 +158,7 @@ if __name__ == "__main__":
             i += 1
             done = False
             # env.render()
-            observation = env.resetFromFrame(startFrame=0, resetYaw=0, startFromRef=True)
+            observation = env.resetFromFrame(startFrame=0, startFromRef=True, initVel=True)
             # drawAxis()
             pause = False
 
@@ -170,7 +172,7 @@ if __name__ == "__main__":
                             # pause = True
                     else:
                         action[env.low_level_agent_id] = agent.compute_action(observation[env.low_level_agent_id], policy_id='low_level_policy')
-                    observation, reward, f_done, info = env.step(action)
+                    observation, reward, f_done, info = env.step(action, debug=True)
                     done = f_done['__all__'] == True
                     drift.append(calcDrift(env.robot_pos, env.starting_robot_pos, env.target))
                     # if(f_done['__all__']):
@@ -196,7 +198,7 @@ if __name__ == "__main__":
             timestep_data.append(env.cur_timestep)
             drift_data.append(np.mean(drift))
             pybullet.removeAllUserDebugItems()
-            if (i == 10):
+            if (i == 30):
                 doneAll = True
         print("  Mean drift untuk {} derajat   : {}".format(degree, np.mean(drift_data)))
         print("  Mean timestep untuk {} derajat: {}".format(degree, np.mean(timestep_data)))

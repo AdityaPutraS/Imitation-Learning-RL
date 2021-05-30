@@ -74,10 +74,10 @@ if __name__ == "__main__":
             useCustomEnv = True
             print("Selesai load model custom env motion 09_03")
         elif(model == 'l'):
-            experiment_name = "HWalk_Low_Mimic_Search_7"
-            experiment_id = "PPO_HumanoidBulletEnv-v0-Low_baa74_00000_0_2021-05-29_19-26-36"
-            checkpoint_num = "9320"
-            motion_used = "motion08_03"
+            experiment_name = "HWalk_Low_Mimic_Final"
+            experiment_id = "PPO_HumanoidBulletEnv-v0-Low_4fc11_00000_0_2021-05-16_22-45-09"
+            checkpoint_num = "3300"
+            motion_used = "motion09_03"
             useCustomEnv = False
             print("Selesai load model latest")
         else:
