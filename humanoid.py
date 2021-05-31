@@ -130,8 +130,8 @@ class CustomScene(Scene):
                 self.terrain, [0, 0, 0.25], [0, 0, 0, 1]
             )
 
-            # terrainShape = self._p.createCollisionShape(shapeType = pybullet.GEOM_HEIGHTFIELD, meshScale=[.1,.1,24],fileName = "./wm_height_out.png")
-            # textureId = self._p.loadTexture("./gimp_overlay_out.png")
+            # terrainShape = self._p.createCollisionShape(shapeType = pybullet.GEOM_HEIGHTFIELD, meshScale=[.1,.1,24],fileName = "./img/wm_height_out.png")
+            # textureId = self._p.loadTexture("./img/gimp_overlay_out.png")
             # self.terrain  = self._p.createMultiBody(0, terrainShape)
             # self._p.changeVisualShape(self.terrain, -1, textureUniqueId = textureId)
 
